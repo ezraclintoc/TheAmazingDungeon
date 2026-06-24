@@ -1,0 +1,35 @@
+mod world;
+mod util;
+
+use bevy::{log::tracing_subscriber::layer::Layered, prelude::*};
+use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
+
+use self::world::*;
+use self::util::*;
+
+pub struct WorldPlugin;
+
+impl Plugin for WorldPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_ldtk_entity::<DoorBundle>("Door")
+            .init_resource::<RoomIndex>()
+            .init_resource::<WorldRng>()
+            .add_systems(Startup, setup_world)
+            .add_systems(Update, create_room_index)
+            .add_systems(PostUpdate, generation_loop.after(TransformSystems::Propagate));
+    }
+}
+
+#[derive(Resource)]
+pub struct LdtkHandle(pub Handle<LdtkProject>);
+
+fn setup_world(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let handle: Handle<LdtkProject> = asset_server.load("rooms.ldtk");
+    commands.insert_resource(LdtkHandle(handle.clone()));
+
+    commands.spawn(LdtkWorldBundle {
+        ldtk_handle: handle.into(),
+        level_set: LevelSet::default(),
+        ..default()
+    });
+}

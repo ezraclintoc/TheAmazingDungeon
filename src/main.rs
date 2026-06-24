@@ -26,26 +26,13 @@ fn main() {
         .add_systems(Startup, setup)
         .insert_resource(LdtkSettings {
             level_spawn_behavior: LevelSpawnBehavior::UseWorldTranslation {
-                load_level_neighbors: true,
+                load_level_neighbors: false,
             },
             ..default()
         })
         .run();
 }
 
-const IIDS: [&str; 2] = [
-    "f10df9c0-48b0-11f1-938d-2b1fd25e17a5",
-    "ceaf3be0-48b0-11f1-938d-bdb5c12c0797",
-];
-
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands) {
     commands.spawn((Camera2d, PanCamera::default()));
-
-    let level_set = LevelSet::from_iids(IIDS);
-
-    commands.spawn(LdtkWorldBundle {
-        ldtk_handle: asset_server.load("rooms.ldtk").into(),
-        level_set,
-        ..Default::default()
-    });
 }

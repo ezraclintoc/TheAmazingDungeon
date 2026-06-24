@@ -7,3 +7,4 @@ edition = "2024"
 avian2d = "0.7.0"
 bevy = {version="0.18.0", features=["pan_camera"] }
 bevy_ecs_ldtk = "0.14.0"
+rand = "0.10.1"
