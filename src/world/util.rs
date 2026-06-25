@@ -4,13 +4,6 @@ use rand::SeedableRng;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-
-#[derive(Resource, Default)]
-pub struct WorldState {
-    pub initialized: bool,
-}
-
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum RoomType {
     Spawn,
@@ -44,12 +37,26 @@ pub struct RoomDef {
     pub room_type: RoomType,
 }
 
+#[derive(Debug, Clone)]
+pub struct Room {
+    pub world_x: f32,
+    pub world_y: f32,
+    pub room: RoomDef, 
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct DoorDef {
     pub x: i32, // local
     pub y: i32,
     pub width: i32,
-    pub dir: Dir,
+    pub dir: Dir,    
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Door {
+    pub door: DoorDef,
+    pub world_x: f32, // global
+    pub world_y: f32,
 }
 
 
@@ -59,20 +66,16 @@ pub struct PlacedRoomMarker {
 }
 
 #[derive(Resource, Default)]
+pub struct WorldState {
+    pub initialized: bool,
+    pub open_doors: Vec<Door>,
+    pub rooms: Vec<Room>,
+}
+
+#[derive(Resource, Default)]
 pub struct RoomIndex {
     pub rooms: Vec<RoomDef>,                  
     pub by_door_dir: HashMap<Dir, Vec<usize>>, // direction -> indices into rooms
-}
-
-
-#[derive(Default, Component)]
-pub struct Door;
-
-#[derive(Default, Bundle, LdtkEntity)]
-pub struct DoorBundle {
-    entity: Door,
-    #[from_entity_instance]
-    instance: EntityInstance,
 }
 
 
@@ -110,6 +113,17 @@ impl Dir {
             Dir::E => Dir::S,
             Dir::W => Dir::N,
         }
+    }
+
+    pub fn door_offset(&self, width: f32) -> Vec2 {
+        let wh = width/2.0;
+        let door_offset = match self {
+            Dir::N => Vec2::new(16.0*wh, 0.0),
+            Dir::S => Vec2::new(16.0*wh, -16.0),
+            Dir::E => Vec2::new(16.0, -16.0*wh),
+            Dir::W => Vec2::new(0.0, -16.0*wh),
+        };
+        door_offset
     }
 }
 

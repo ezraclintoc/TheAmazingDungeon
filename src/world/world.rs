@@ -1,11 +1,15 @@
 use bevy::{log::tracing_subscriber::layer::Layered, prelude::*};
 use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
 use rand::RngExt;
-use std::collections::HashMap;
+use rand::seq::SliceRandom;
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
 use super::util::*;
 use crate::world::LdtkHandle;
+
+const MAX_ROOMS: usize = 1000;
+const MAX_ROOMS_PER_FRAME: usize = 10;
 
 pub fn create_room_index(
     projects: Query<&LdtkProjectHandle>,
@@ -47,7 +51,11 @@ pub fn create_room_index(
                 doors.push(DoorDef {
                     x: entity.grid.x,
                     y: entity.grid.y,
-                    width: entity.width / 16,
+                    width: if entity.width == 16 {
+                        entity.height / 16
+                    } else {
+                        entity.width / 16
+                    },
                     dir,
                 });
             }
@@ -104,17 +112,15 @@ pub fn create_room_index(
     room_idx.by_door_dir = by_door_dir;
     *done = true;
     info!("Room index built: {} rooms", room_idx.rooms.len());
-
-    for (dir, indices) in &room_idx.by_door_dir {
-        info!("index has {:?} -> {} rooms", dir, indices.len());
-    }
 }
 
 fn place_room(
     room: &RoomDef,
     world_x: f32,
     world_y: f32,
+    connecting_door: &DoorDef,
     commands: &mut Commands,
+    world_state: &mut ResMut<WorldState>,
     ldtk_handle: &Handle<LdtkProject>,
 ) {
     let level_set = LevelSet::from_iids([room.iid.clone()]);
@@ -133,166 +139,183 @@ fn place_room(
             iid: room.iid.clone(),
         },
     ));
+    world_state.rooms.push(Room {
+        world_x: world_x as f32,
+        world_y: world_y as f32,
+        room: room.clone(),
+    });
+
+    for door in &room.doors {
+        if door.x == connecting_door.x && door.y == connecting_door.y {
+            continue;
+        }
+        world_state.open_doors.push(Door {
+            door: door.clone(),
+            world_x: world_x + (door.x * 16) as f32 + door.dir.door_offset(door.width as f32).x,
+            world_y: world_y + (-door.y * 16) as f32 + door.dir.door_offset(door.width as f32).y,
+        });
+    }
 }
 
 pub fn generation_loop(
-    mut done: Local<bool>,
     mut commands: Commands,
     mut world_rng: ResMut<WorldRng>,
-    doors: Query<(Entity, &EntityInstance, &GlobalTransform), With<Door>>,
+    mut world_state: ResMut<WorldState>,
     placed_rooms: Query<(&LevelIid, &GlobalTransform)>,
     room_idx: Res<RoomIndex>,
     ldtk_handle: Res<LdtkHandle>,
+    camera: Query<&GlobalTransform, With<Camera2d>>,
+    mut gizmos: Gizmos,
 ) {
+    //Check if room_idx has been initiailized
     if room_idx.rooms.is_empty() {
         return;
     }
-    if !*done {
+
+    //Generate spawn room
+    if !&world_state.initialized {
         let spawn_room = room_idx
             .rooms
             .iter()
             .find(|rd| rd.room_type == RoomType::Spawn)
             .unwrap_or(&room_idx.rooms[0]);
-        place_room(spawn_room, 0.0, 0.0, &mut commands, &ldtk_handle.0);
 
-        commands.spawn((
-            Sprite::from_color(Color::srgba(0.2, 0.2, 1.0, 1.0), Vec2::splat(8.0)),
-            Transform::from_xyz(0.0, 0.0, 100.0),
-        ));
+        place_room(
+            spawn_room,
+            0.0,
+            0.0,
+            &DoorDef {
+                x: 0,
+                y: 0,
+                width: 0,
+                dir: Dir::N,
+            },
+            &mut commands,
+            &mut world_state,
+            &ldtk_handle.0,
+        );
 
-        *done = true;
+        world_state.initialized = true;
     }
 
-    if placed_rooms.iter().len() >= 10 {
+    if placed_rooms.iter().len() >= MAX_ROOMS {
+        warn!("Too many rooms! Over {} rooms!", MAX_ROOMS);
         return;
     }
 
-    info!(
-        "Rooms generated {}, doors open {}",
-        placed_rooms.iter().len(),
-        doors.iter().len()
-    );
-    for (entity, instance, gt) in &doors {
-        if gt.translation() == Vec3::ZERO {
-            info!("door skipped - transform not ready");
-            continue;
+    let Ok(cam_gt) = camera.single() else {
+        error!("Camera not found!");
+        return;
+    };
+    let cam_pos = cam_gt.translation().truncate();
+
+    let mut nearby_doors: Vec<usize> = (0..world_state.open_doors.len())
+        .filter(|&i| {
+            let door = &world_state.open_doors[i];
+            Vec2::new(door.world_x, door.world_y).distance(cam_pos) <= 200.0
+        })
+        .collect();
+
+    nearby_doors.sort_by(|&a, &b| {
+        let door_a = &world_state.open_doors[a];
+        let door_b = &world_state.open_doors[b];
+        let dist_a = Vec2::new(door_a.world_x, door_a.world_y).distance(cam_pos);
+        let dist_b = Vec2::new(door_b.world_x, door_b.world_y).distance(cam_pos);
+        dist_a.partial_cmp(&dist_b).unwrap()
+    });
+
+    let rng = &mut world_rng.0;
+    let mut rooms_generated = 0;
+
+    for door_idx in nearby_doors {
+        if rooms_generated >= MAX_ROOMS_PER_FRAME {
+            break;
         }
 
-        let dir = if instance.width > instance.height {
-            if instance.grid.y == 0 { Dir::N } else { Dir::S }
-        } else {
-            if instance.grid.x == 0 { Dir::W } else { Dir::E }
-        };
+        let door = world_state.open_doors[door_idx].clone();
+        let dir = door.door.dir;
 
         let Some(room_indices) = room_idx.by_door_dir.get(&dir.opposite()) else {
-            info!("no rooms for dir {:?}", dir.opposite());
+            world_state.open_doors.remove(door_idx);
             continue;
         };
 
-        info!("door at {:?}, dir {:?}", gt.translation(), dir);
-        let rng = &mut world_rng.0;
-        let room_idx_pick = pick_weighted(room_indices, &room_idx.rooms, rng);
-        let room = &room_idx.rooms[room_idx_pick];
+        let mut candidates: Vec<usize> = room_indices
+            .iter()
+            .flat_map(|&i| {
+                let weight = (room_idx.rooms[i].weight * 10.0).round() as usize;
+                std::iter::repeat(i).take(weight.max(1))
+            })
+            .collect();
 
-        let door_edge = gt.translation().truncate() + dir.as_vec() * 8.0;
+        candidates.shuffle(rng);
 
-        let door_offset = match dir.opposite() {
-            Dir::N => { Vec2::new( 16.0, 0.0 )},
-            Dir::S => { Vec2::new( 16.0, -16.0 )},
-            Dir::E => { Vec2::new( 16.0, 16.0 )},
-            Dir::W => { Vec2::new( 0.0, 16.0 )},
-        };
+        let mut tried: HashSet<usize> = HashSet::new();
+        let mut placed = false;
+        for &room_idx_pick in &candidates {
+            if tried.contains(&room_idx_pick) {
+                continue;
+            }
+            tried.insert(room_idx_pick);
 
-        let matching_door = room.doors.iter().find(|d| d.dir == dir.opposite()).unwrap();
-        let matching_door_vec = Vec2::new(matching_door.x as f32, -matching_door.y as f32) * 16.0 + door_offset;
+            let room = &room_idx.rooms[room_idx_pick];
+            let Some(matching_door) = room.doors.iter().find(|d| d.dir == dir.opposite()) else {
+                continue;
+            };
 
-        let room_world = -matching_door_vec + door_edge;//(Vec2::new(matching_door.x as f32, matching_door.y as f32) + dir.as_vec()) * -16.0 + door_edge;
+            let matching_door_vec = Vec2::new(matching_door.x as f32, -matching_door.y as f32)
+                * 16.0
+                + dir.door_offset(door.door.width as f32);
+            let room_world_pos =
+                -matching_door_vec + Vec2::new(door.world_x, door.world_y) + dir.as_vec() * 16.0;
 
-        
-        commands.spawn((
-            Sprite::from_color(Color::srgba(0.5, 0.2, 1.0, 1.0), Vec2::splat(8.0)),
-            Transform::from_translation(
-                (room_world+matching_door_vec).extend(100.0),
-            ),
-        ));
+            if !can_place_room(room, room_world_pos.x, room_world_pos.y, &world_state, 0.0) {
+                continue;
+            }
 
-        commands.spawn((
-            Sprite::from_color(Color::srgba(0.2, 0.2, 1.0, 1.0), Vec2::splat(8.0)),
-            Transform::from_translation(
-                door_edge.extend(100.0),
-            ),
-        ));
+            place_room(
+                room,
+                room_world_pos.x,
+                room_world_pos.y,
+                matching_door,
+                &mut commands,
+                &mut world_state,
+                &ldtk_handle.0,
+            );
+            rooms_generated += 1;
 
-        place_room(
-            room,
-            room_world.x,
-            room_world.y,
-            &mut commands,
-            &ldtk_handle.0,
-        );
-        commands.entity(entity).despawn();
-        break; // one room per frame to let transforms propagate
-    }
-}
-
-fn pick_weighted(room_indices: &[usize], rooms: &[RoomDef], rng: &mut impl rand::Rng) -> usize {
-    let total_weight: f32 = room_indices.iter().map(|&i| rooms[i].weight).sum();
-
-    let mut roll = rng.random_range(0.0..total_weight);
-
-    for &i in room_indices {
-        roll -= rooms[i].weight;
-        if roll <= 0.0 {
-            return i;
+            info!("Placed room at {:?}", room_world_pos);
+            break;
         }
     }
-
-    // fallback to last
-    *room_indices.last().unwrap()
 }
 
-//         let matching_door = room.doors.iter().find(|d| d.dir == dir.opposite()).unwrap();
+fn can_place_room(
+    room: &RoomDef,
+    world_x: f32,
+    world_y: f32,
+    world_state: &WorldState,
+    gap: f32,
+) -> bool {
+    // candidate corners: top-left is (world_x, world_y), bottom-right is right and down
+    let left = world_x;
+    let right = world_x + room.width as f32;
+    let top = world_y;
+    let bottom = world_y - room.height as f32;
 
-// door local position in Bevy space (Y flipped from LDtk grid)
-// let door_local_x = (matching_door.x * 16) as f32;
-// let door_local_y = (room.height - matching_door.y * 16) as f32;
+    for placed in &world_state.rooms {
+        let p_left = placed.world_x;
+        let p_right = placed.world_x + placed.room.width as f32;
+        let p_top = placed.world_y;
+        let p_bottom = placed.world_y - placed.room.height as f32;
 
-// let (room_world_x, room_world_y) = match dir {
-//     Dir::N => (
-//         gt.translation().x - door_local_x,
-//         gt.translation().y, // room sits above, bottom edge at frontier y
-//     ),
-//     Dir::S => (
-//         gt.translation().x - door_local_x,
-//         gt.translation().y - room.height as f32, // room sits below
-//     ),
-//     Dir::E => (
-//         gt.translation().x, // room sits to the right
-//         gt.translation().y - door_local_y,
-//     ),
-//     Dir::W => (
-//         gt.translation().x - room.width as f32, // room sits to the left
-//         gt.translation().y - door_local_y,
-//     ),
-// };
-
-// info!(
-//     "frontier door world: {}, {}",
-//     gt.translation().x,
-//     gt.translation().y
-// );
-// info!(
-//     "matching door local grid: {}, {}",
-//     matching_door.x, matching_door.y
-// );
-// info!("door local bevy: {}, {}", door_local_x, door_local_y);
-// info!("placing room at: {}, {}", room_world_x, room_world_y);
-// info!("frontier door dir: {:?}", dir);
-// info!("room size: {}x{}", room.width, room.height);
-// info!(
-//     "room doors: {:?}",
-//     room.doors
-//         .iter()
-//         .map(|d| (d.x, d.y, d.dir))
-//         .collect::<Vec<_>>()
-// );
+        let overlaps = left - gap < p_right
+            && right + gap > p_left
+            && bottom - gap < p_top
+            && top + gap > p_bottom;
+        if overlaps {
+            return false;
+        }
+    }
+    true
+}

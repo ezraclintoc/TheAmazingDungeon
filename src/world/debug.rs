@@ -1,0 +1,76 @@
+use bevy::{log::tracing_subscriber::layer::Layered, prelude::*};
+use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
+
+use super::util::*;
+
+pub fn debug_grid(mut gizmos: Gizmos, camera: Query<&Transform, With<Camera2d>>) {
+    let Ok(cam) = camera.single() else { return; };
+    
+    let cam_x = cam.translation.x;
+    let cam_y = cam.translation.y;
+    
+    let range = 500.0;
+    let step = 16.0;
+    
+    let x_start = ((cam_x - range) / step).floor() * step;
+    let y_start = ((cam_y - range) / step).floor() * step;
+    
+    for i in 0..((range * 2.0 / step) as i32) {
+        let x = x_start + i as f32 * step;
+        let y = y_start + i as f32 * step;
+        
+        // vertical lines
+        gizmos.line_2d(
+            Vec2::new(x, cam_y - range),
+            Vec2::new(x, cam_y + range),
+            Color::srgba(1.0, 1.0, 1.0, 0.1),
+        );
+        
+        // horizontal lines
+        gizmos.line_2d(
+            Vec2::new(cam_x - range, y),
+            Vec2::new(cam_x + range, y),
+            Color::srgba(1.0, 1.0, 1.0, 0.1),
+        );
+    }
+    
+    // draw origin
+    gizmos.line_2d(Vec2::new(-8.0, 0.0), Vec2::new(8.0, 0.0), Color::srgb(1.0, 0.0, 0.0));
+    gizmos.line_2d(Vec2::new(0.0, -8.0), Vec2::new(0.0, 8.0), Color::srgb(1.0, 0.0, 0.0));
+}
+
+pub fn debug_room_bounds(
+    mut gizmos: Gizmos,
+    world_state: Res<WorldState>,
+    room_idx: Res<RoomIndex>,
+) {
+    for room in &world_state.rooms {
+        let x = room.world_x + room.room.width as f32 / 2.0;  //gt.translation().x;// + room.width as f32 / 2.0 + room.offset_x;
+        let y = room.world_y - room.room.height as f32 / 2.0; //gt.translation().y;// + room.height as f32 / 2.0;
+
+        gizmos.circle_2d(
+            Vec2::new(x, y), 2.0, Color::srgba(1.0, 0.2, 0.2, 1.0));
+
+        gizmos.rect_2d(
+            Vec2::new(x, y),
+            Vec2::new(room.room.width as f32, room.room.height as f32),
+            Color::srgba(0.0, 1.0, 0.0, 0.15),
+        );
+    }
+}
+
+pub fn regenerate_on_key(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut commands: Commands,
+    mut world_state: ResMut<WorldState>,
+    worlds: Query<Entity, With<LevelSet>>,
+) {
+    if keys.just_pressed(KeyCode::KeyR) {
+        for entity in &worlds {
+            commands.entity(entity).despawn();
+        }
+        world_state.open_doors.clear();
+        world_state.rooms.clear();
+        world_state.initialized = false;
+    }
+}
