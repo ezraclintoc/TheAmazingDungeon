@@ -8,6 +8,8 @@ jobs:
   build:
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
     strategy:
       fail-fast: false
       matrix:
@@ -21,7 +23,6 @@ jobs:
           - os: macos-latest
             name: macos
             binary: TheAmazingDungeon
-
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +40,16 @@ jobs:
 
       - name: Install Bevy system deps (Linux)
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libudev-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev
 
       - name: Build
         run: cargo build --release
