@@ -18,7 +18,7 @@ impl Plugin for WorldPlugin {
             .insert_resource(ClearColor(Color::srgb_u8(118,  59, 54)))
             .add_systems(Startup, setup_world)
             .add_systems(Update, create_room_index)
-            .add_systems(Update, (debug_grid, regenerate_on_key, debug_open_doors))
+            .add_systems(Update, (debug_grid, regenerate_on_key, debug_open_doors, debug_door_collision))
             .add_systems(PostUpdate, generation_loop.after(TransformSystems::Propagate));
     }
 }

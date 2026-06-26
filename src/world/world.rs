@@ -124,18 +124,16 @@ fn place_room(
     ldtk_handle: &Handle<LdtkProject>,
 ) {
     let level_set = LevelSet::from_iids([room.iid.clone()]);
-    commands.spawn((
-        LdtkWorldBundle {
-            ldtk_handle: ldtk_handle.clone().into(),
-            level_set,
-            transform: Transform::from_xyz(
-                world_x - room.offset_x as f32,
-                world_y + room.offset_y as f32,
-                50.0,
-            ),
-            ..default()
-        },
-    ));
+    commands.spawn((LdtkWorldBundle {
+        ldtk_handle: ldtk_handle.clone().into(),
+        level_set,
+        transform: Transform::from_xyz(
+            world_x - room.offset_x as f32,
+            world_y + room.offset_y as f32,
+            50.0,
+        ),
+        ..default()
+    },));
     world_state.rooms.push(Room {
         world_x: world_x as f32,
         world_y: world_y as f32,
@@ -224,7 +222,6 @@ pub fn generation_loop(
     let rng = &mut world_rng.0;
     let mut filled_doors = Vec::new();
 
-
     for door_idx in nearby_doors {
         if filled_doors.len() >= MAX_ROOMS_PER_FRAME {
             break;
@@ -274,6 +271,43 @@ pub fn generation_loop(
                 continue;
             }
 
+            //Makes sure all doors (of the room we are about to place) can go forward
+            let mut collision = false;
+            for dd in &room.doors {
+                if dd == matching_door {
+                    continue;
+                }
+
+                let d = Door {
+                    door: dd.clone(),
+                    world_x: room_world_pos.x
+                        + (dd.x * 16) as f32
+                        + dd.dir.door_offset(dd.width as f32).x,
+                    world_y: room_world_pos.y
+                        + (-dd.y * 16) as f32
+                        + dd.dir.door_offset(dd.width as f32).y,
+                };
+                if !check_new_door_collision(&d, &world_state) {
+                    collision = true;
+                }
+            }
+            if collision == true {
+                continue;
+            }
+
+            if !check_current_door_collision(
+                &Room {
+                    room: room.clone(),
+                    world_x: room_world_pos.x,
+                    world_y: room_world_pos.y,
+                },
+                &door,
+                &world_state,
+            ) {
+                info!("Colliding");
+                continue;
+            }
+
             place_room(
                 room,
                 room_world_pos.x,
@@ -292,7 +326,9 @@ pub fn generation_loop(
 
     filled_doors.sort();
     filled_doors.reverse();
-    filled_doors.iter().for_each(|idx| {world_state.open_doors.swap_remove(*idx); } );
+    filled_doors.iter().for_each(|idx| {
+        world_state.open_doors.swap_remove(*idx);
+    });
 }
 
 fn check_room_bounds(
@@ -325,6 +361,38 @@ fn check_room_bounds(
     true
 }
 
-fn check_door_collision(room: &RoomDef, world_x: f32, world_y: f32, world_state: &WorldState) {
-    todo!();
+pub fn check_new_door_collision(door: &Door, world_state: &WorldState) -> bool {
+    for room in &world_state.rooms {
+        if rects_collide(
+            door.get_bounding_box().0,
+            door.get_bounding_box().1,
+            Vec2::new(room.world_x, room.world_y),
+            Vec2::new(room.room.width as f32, room.room.height as f32),
+        ) {
+            return false;
+        }
+    }
+    true
+}
+
+pub fn check_current_door_collision(
+    room: &Room,
+    connecting_door: &Door,
+    world_state: &WorldState,
+) -> bool {
+    for door in &world_state.open_doors {
+        if door == connecting_door {
+            continue;
+        }
+
+        if rects_collide(
+            door.get_bounding_box().0,
+            door.get_bounding_box().1,
+            Vec2::new(room.world_x, room.world_y),
+            Vec2::new(room.room.width as f32, room.room.height as f32),
+        ) {
+            return false;
+        }
+    }
+    true
 }
