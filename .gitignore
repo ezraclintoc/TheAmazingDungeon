@@ -2,3 +2,4 @@
 .envrc
 shell.nix
 /.direnv
+/assets/rooms

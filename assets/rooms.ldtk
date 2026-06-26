@@ -11,7 +11,7 @@
 	"iid": "ceaec6b0-48b0-11f1-938d-5b8034df5959",
 	"jsonVersion": "1.5.3",
 	"appBuildId": 473703,
-	"nextUid": 65,
+	"nextUid": 69,
 	"identifierStyle": "Capitalize",
 	"toc": [],
 	"worldLayout": "Free",
@@ -33,7 +33,7 @@
 	"imageExportMode": "None",
 	"exportLevelBg": true,
 	"pngFilePattern": null,
-	"backupOnSave": false,
+	"backupOnSave": true,
 	"backupLimit": 10,
 	"backupRelPath": null,
 	"levelNamePattern": "Level_%idx",
@@ -1112,8 +1112,8 @@
 			"identifier": "Room_Spawn_1",
 			"iid": "ceaf3be0-48b0-11f1-938d-bdb5c12c0797",
 			"uid": 0,
-			"worldX": 80,
-			"worldY": -144,
+			"worldX": 32,
+			"worldY": -128,
 			"worldDepth": 0,
 			"pxWid": 192,
 			"pxHei": 128,
@@ -1172,8 +1172,8 @@
 							"defUid": 27,
 							"px": [112,0],
 							"fieldInstances": [],
-							"__worldX": 192,
-							"__worldY": -144
+							"__worldX": 144,
+							"__worldY": -128
 						},
 						{
 							"__identifier": "Door",
@@ -1188,8 +1188,8 @@
 							"defUid": 27,
 							"px": [176,64],
 							"fieldInstances": [],
-							"__worldX": 256,
-							"__worldY": -80
+							"__worldX": 208,
+							"__worldY": -64
 						},
 						{
 							"__identifier": "Door",
@@ -1204,8 +1204,8 @@
 							"defUid": 27,
 							"px": [128,112],
 							"fieldInstances": [],
-							"__worldX": 208,
-							"__worldY": -32
+							"__worldX": 160,
+							"__worldY": -16
 						}
 					]
 				},
@@ -1342,8 +1342,8 @@
 			"identifier": "Hallway_Vertical_W2_2",
 			"iid": "fb6790d0-6fc0-11f1-a512-1d93b44d8102",
 			"uid": 50,
-			"worldX": -192,
-			"worldY": -32,
+			"worldX": -368,
+			"worldY": -208,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 32,
@@ -1399,8 +1399,8 @@
 							"defUid": 27,
 							"px": [16,0],
 							"fieldInstances": [],
-							"__worldX": -176,
-							"__worldY": -32
+							"__worldX": -352,
+							"__worldY": -208
 						},
 						{
 							"__identifier": "Door",
@@ -1415,8 +1415,8 @@
 							"defUid": 27,
 							"px": [16,16],
 							"fieldInstances": [],
-							"__worldX": -176,
-							"__worldY": -16
+							"__worldX": -352,
+							"__worldY": -192
 						}
 					]
 				},
@@ -1461,8 +1461,8 @@
 			"identifier": "Hallway_Vertical_W2_5",
 			"iid": "2086fbb0-6fc0-11f1-a512-4f3405ffd7ff",
 			"uid": 63,
-			"worldX": -192,
-			"worldY": 16,
+			"worldX": -368,
+			"worldY": -160,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 48,
@@ -1518,8 +1518,8 @@
 							"defUid": 27,
 							"px": [16,0],
 							"fieldInstances": [],
-							"__worldX": -176,
-							"__worldY": 16
+							"__worldX": -352,
+							"__worldY": -160
 						},
 						{
 							"__identifier": "Door",
@@ -1534,8 +1534,8 @@
 							"defUid": 27,
 							"px": [16,32],
 							"fieldInstances": [],
-							"__worldX": -176,
-							"__worldY": 48
+							"__worldX": -352,
+							"__worldY": -128
 						}
 					]
 				},
@@ -1584,7 +1584,7 @@
 			"identifier": "Hallway_Vertical_W2_3",
 			"iid": "795ed9f0-6fc0-11f1-a512-0f37b6faa362",
 			"uid": 57,
-			"worldX": -480,
+			"worldX": -368,
 			"worldY": -48,
 			"worldDepth": 0,
 			"pxWid": 64,
@@ -1641,7 +1641,7 @@
 							"defUid": 27,
 							"px": [16,32],
 							"fieldInstances": [],
-							"__worldX": -464,
+							"__worldX": -352,
 							"__worldY": -16
 						}
 					]
@@ -1691,8 +1691,8 @@
 			"identifier": "Hallway_Vertical_W2_4",
 			"iid": "93dec1a0-6fc0-11f1-a512-d3050357c10a",
 			"uid": 58,
-			"worldX": -480,
-			"worldY": -112,
+			"worldX": -368,
+			"worldY": -96,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 32,
@@ -1748,8 +1748,8 @@
 							"defUid": 27,
 							"px": [16,0],
 							"fieldInstances": [],
-							"__worldX": -464,
-							"__worldY": -112
+							"__worldX": -352,
+							"__worldY": -96
 						}
 					]
 				},
@@ -1794,8 +1794,8 @@
 			"identifier": "Hallway_BRCorner_W2_1",
 			"iid": "84c81480-48b0-11f1-938d-8f571e841180",
 			"uid": 42,
-			"worldX": -80,
-			"worldY": -96,
+			"worldX": -64,
+			"worldY": -80,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 80,
@@ -1851,8 +1851,8 @@
 							"defUid": 27,
 							"px": [48,32],
 							"fieldInstances": [],
-							"__worldX": -32,
-							"__worldY": -64
+							"__worldX": -16,
+							"__worldY": -48
 						},
 						{
 							"__identifier": "Door",
@@ -1867,8 +1867,8 @@
 							"defUid": 27,
 							"px": [16,64],
 							"fieldInstances": [],
-							"__worldX": -64,
-							"__worldY": -32
+							"__worldX": -48,
+							"__worldY": -16
 						}
 					]
 				},
@@ -1919,14 +1919,150 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [{ "levelIid": "c4e7f8e0-6fc0-11f1-a512-9957443febeb", "dir": "n" }]
+		},
+		{
+			"identifier": "Hallway_BRCorner_W2_5",
+			"iid": "5538f9c0-6fc0-11f1-a52b-d73f3473c61b",
+			"uid": 65,
+			"worldX": -160,
+			"worldY": -80,
+			"worldDepth": 0,
+			"pxWid": 80,
+			"pxHei": 80,
+			"__bgColor": "#696A79",
+			"bgColor": null,
+			"useAutoIdentifier": false,
+			"bgRelPath": null,
+			"bgPos": null,
+			"bgPivotX": 0.5,
+			"bgPivotY": 0.5,
+			"__smartColor": "#ADADB5",
+			"__bgPos": null,
+			"externalRelPath": null,
+			"fieldInstances": [
+				{ "__identifier": "room_type", "__type": "LocalEnum.RoomTypes", "__value": "Hallway", "__tile": null, "defUid": 39, "realEditorValues": [] },
+				{ "__identifier": "weight", "__type": "Int", "__value": 10, "__tile": null, "defUid": 40, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }
+			],
+			"layerInstances": [
+				{
+					"__identifier": "Entities",
+					"__type": "Entities",
+					"__cWid": 5,
+					"__cHei": 5,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": null,
+					"__tilesetRelPath": null,
+					"iid": "5538f9c1-6fc0-11f1-a52b-07dc58742e74",
+					"levelId": 65,
+					"layerDefUid": 36,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [],
+					"autoLayerTiles": [],
+					"seed": 3767797,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": [
+						{
+							"__identifier": "Door",
+							"__grid": [4,2],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#342100",
+							"iid": "5538f9c2-6fc0-11f1-a52b-71187b180e7b",
+							"width": 16,
+							"height": 32,
+							"defUid": 27,
+							"px": [64,32],
+							"fieldInstances": [],
+							"__worldX": -96,
+							"__worldY": -48
+						},
+						{
+							"__identifier": "Door",
+							"__grid": [1,4],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#342100",
+							"iid": "5538f9c3-6fc0-11f1-a52b-edb9f9c47c17",
+							"width": 32,
+							"height": 16,
+							"defUid": 27,
+							"px": [16,64],
+							"fieldInstances": [],
+							"__worldX": -144,
+							"__worldY": -16
+						}
+					]
+				},
+				{
+					"__identifier": "WallGrid",
+					"__type": "IntGrid",
+					"__cWid": 5,
+					"__cHei": 5,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": 1,
+					"__tilesetRelPath": "tilemap_packed.png",
+					"iid": "5538f9c4-6fc0-11f1-a52b-99e6fa746502",
+					"levelId": 65,
+					"layerDefUid": 4,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,0,0,0,0,1,0,0,1,1],
+					"autoLayerTiles": [
+						{ "px": [16,48], "src": [0,64], "f": 0, "t": 48, "d": [25,16], "a": 1 },
+						{ "px": [32,48], "src": [0,64], "f": 0, "t": 48, "d": [25,17], "a": 1 },
+						{ "px": [48,48], "src": [0,64], "f": 0, "t": 48, "d": [25,18], "a": 1 },
+						{ "px": [64,48], "src": [0,64], "f": 0, "t": 48, "d": [25,19], "a": 1 },
+						{ "px": [16,64], "src": [0,64], "f": 0, "t": 48, "d": [25,21], "a": 1 },
+						{ "px": [32,64], "src": [0,64], "f": 0, "t": 48, "d": [25,22], "a": 1 },
+						{ "px": [16,32], "src": [32,64], "f": 0, "t": 50, "d": [23,11], "a": 1 },
+						{ "px": [32,32], "src": [32,64], "f": 0, "t": 50, "d": [23,12], "a": 1 },
+						{ "px": [64,32], "src": [32,64], "f": 0, "t": 50, "d": [23,14], "a": 1 },
+						{ "px": [48,32], "src": [48,64], "f": 0, "t": 51, "d": [26,13], "a": 1 },
+						{ "px": [0,64], "src": [16,16], "f": 0, "t": 13, "d": [38,20], "a": 1 },
+						{ "px": [16,16], "src": [64,48], "f": 0, "t": 40, "d": [7,6], "a": 1 },
+						{ "px": [32,16], "src": [64,48], "f": 0, "t": 40, "d": [7,7], "a": 1 },
+						{ "px": [48,16], "src": [64,48], "f": 0, "t": 40, "d": [7,8], "a": 1 },
+						{ "px": [64,16], "src": [64,48], "f": 0, "t": 40, "d": [7,9], "a": 1 },
+						{ "px": [0,16], "src": [16,16], "f": 0, "t": 13, "d": [16,5], "a": 1 },
+						{ "px": [0,32], "src": [16,16], "f": 0, "t": 13, "d": [16,10], "a": 1 },
+						{ "px": [0,48], "src": [16,16], "f": 0, "t": 13, "d": [16,15], "a": 1 },
+						{ "px": [16,0], "src": [32,0], "f": 0, "t": 2, "d": [8,1], "a": 1 },
+						{ "px": [32,0], "src": [32,0], "f": 0, "t": 2, "d": [8,2], "a": 1 },
+						{ "px": [48,0], "src": [32,0], "f": 0, "t": 2, "d": [8,3], "a": 1 },
+						{ "px": [64,0], "src": [32,0], "f": 0, "t": 2, "d": [8,4], "a": 1 },
+						{ "px": [0,0], "src": [16,0], "f": 0, "t": 1, "d": [14,0], "a": 1 },
+						{ "px": [64,64], "src": [32,32], "f": 0, "t": 26, "d": [19,24], "a": 1 },
+						{ "px": [48,64], "src": [64,0], "f": 0, "t": 4, "d": [17,23], "a": 1 }
+					],
+					"seed": 9468401,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": []
+				}
+			],
+			"__neighbours": [{ "levelIid": "5fcd9032-6fc0-11f1-a52b-95205224d673", "dir": "n" }]
 		},
 		{
 			"identifier": "Hallway_BRCorner_W2_2",
 			"iid": "c4e7f8e0-6fc0-11f1-a512-9957443febeb",
 			"uid": 47,
-			"worldX": -80,
-			"worldY": -224,
+			"worldX": -64,
+			"worldY": -160,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 80,
@@ -1982,8 +2118,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": -80,
-							"__worldY": -192
+							"__worldX": -64,
+							"__worldY": -128
 						},
 						{
 							"__identifier": "Door",
@@ -1998,8 +2134,8 @@
 							"defUid": 27,
 							"px": [16,64],
 							"fieldInstances": [],
-							"__worldX": -64,
-							"__worldY": -160
+							"__worldX": -48,
+							"__worldY": -96
 						}
 					]
 				},
@@ -2050,14 +2186,150 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [ { "levelIid": "84c81480-48b0-11f1-938d-8f571e841180", "dir": "s" }, { "levelIid": "d1785f50-6fc0-11f1-a512-9ddb26611344", "dir": "n" } ]
+		},
+		{
+			"identifier": "Hallway_BRCorner_W2_6",
+			"iid": "5fcd9032-6fc0-11f1-a52b-95205224d673",
+			"uid": 66,
+			"worldX": -160,
+			"worldY": -160,
+			"worldDepth": 0,
+			"pxWid": 80,
+			"pxHei": 80,
+			"__bgColor": "#696A79",
+			"bgColor": null,
+			"useAutoIdentifier": false,
+			"bgRelPath": null,
+			"bgPos": null,
+			"bgPivotX": 0.5,
+			"bgPivotY": 0.5,
+			"__smartColor": "#ADADB5",
+			"__bgPos": null,
+			"externalRelPath": null,
+			"fieldInstances": [
+				{ "__identifier": "room_type", "__type": "LocalEnum.RoomTypes", "__value": "Hallway", "__tile": null, "defUid": 39, "realEditorValues": [] },
+				{ "__identifier": "weight", "__type": "Int", "__value": 10, "__tile": null, "defUid": 40, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }
+			],
+			"layerInstances": [
+				{
+					"__identifier": "Entities",
+					"__type": "Entities",
+					"__cWid": 5,
+					"__cHei": 5,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": null,
+					"__tilesetRelPath": null,
+					"iid": "5fcd9033-6fc0-11f1-a52b-adf4264929f2",
+					"levelId": 66,
+					"layerDefUid": 36,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [],
+					"autoLayerTiles": [],
+					"seed": 3767797,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": [
+						{
+							"__identifier": "Door",
+							"__grid": [0,2],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#342100",
+							"iid": "5fcdb740-6fc0-11f1-a52b-39e4f6b21132",
+							"width": 16,
+							"height": 32,
+							"defUid": 27,
+							"px": [0,32],
+							"fieldInstances": [],
+							"__worldX": -160,
+							"__worldY": -128
+						},
+						{
+							"__identifier": "Door",
+							"__grid": [2,4],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#342100",
+							"iid": "5fcdb741-6fc0-11f1-a52b-15b15ede5f52",
+							"width": 32,
+							"height": 16,
+							"defUid": 27,
+							"px": [32,64],
+							"fieldInstances": [],
+							"__worldX": -128,
+							"__worldY": -96
+						}
+					]
+				},
+				{
+					"__identifier": "WallGrid",
+					"__type": "IntGrid",
+					"__cWid": 5,
+					"__cHei": 5,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": 1,
+					"__tilesetRelPath": "tilemap_packed.png",
+					"iid": "5fcdb742-6fc0-11f1-a52b-0d000c8b2f78",
+					"levelId": 66,
+					"layerDefUid": 4,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,1],
+					"autoLayerTiles": [
+						{ "px": [0,48], "src": [0,64], "f": 0, "t": 48, "d": [25,15], "a": 1 },
+						{ "px": [16,48], "src": [0,64], "f": 0, "t": 48, "d": [25,16], "a": 1 },
+						{ "px": [32,48], "src": [0,64], "f": 0, "t": 48, "d": [25,17], "a": 1 },
+						{ "px": [48,48], "src": [0,64], "f": 0, "t": 48, "d": [25,18], "a": 1 },
+						{ "px": [32,64], "src": [0,64], "f": 0, "t": 48, "d": [25,22], "a": 1 },
+						{ "px": [48,64], "src": [0,64], "f": 0, "t": 48, "d": [25,23], "a": 1 },
+						{ "px": [0,32], "src": [32,64], "f": 0, "t": 50, "d": [23,10], "a": 1 },
+						{ "px": [16,32], "src": [32,64], "f": 0, "t": 50, "d": [23,11], "a": 1 },
+						{ "px": [32,32], "src": [32,64], "f": 0, "t": 50, "d": [23,12], "a": 1 },
+						{ "px": [48,32], "src": [48,64], "f": 0, "t": 51, "d": [26,13], "a": 1 },
+						{ "px": [64,64], "src": [16,16], "f": 1, "t": 13, "d": [38,24], "a": 1 },
+						{ "px": [0,16], "src": [64,48], "f": 0, "t": 40, "d": [7,5], "a": 1 },
+						{ "px": [16,16], "src": [64,48], "f": 0, "t": 40, "d": [7,6], "a": 1 },
+						{ "px": [32,16], "src": [64,48], "f": 0, "t": 40, "d": [7,7], "a": 1 },
+						{ "px": [48,16], "src": [64,48], "f": 0, "t": 40, "d": [7,8], "a": 1 },
+						{ "px": [64,16], "src": [16,16], "f": 1, "t": 13, "d": [16,9], "a": 1 },
+						{ "px": [64,32], "src": [16,16], "f": 1, "t": 13, "d": [16,14], "a": 1 },
+						{ "px": [64,48], "src": [16,16], "f": 1, "t": 13, "d": [16,19], "a": 1 },
+						{ "px": [0,0], "src": [32,0], "f": 0, "t": 2, "d": [8,0], "a": 1 },
+						{ "px": [16,0], "src": [32,0], "f": 0, "t": 2, "d": [8,1], "a": 1 },
+						{ "px": [32,0], "src": [32,0], "f": 0, "t": 2, "d": [8,2], "a": 1 },
+						{ "px": [48,0], "src": [32,0], "f": 0, "t": 2, "d": [8,3], "a": 1 },
+						{ "px": [64,0], "src": [16,0], "f": 1, "t": 1, "d": [14,4], "a": 1 },
+						{ "px": [0,64], "src": [32,32], "f": 0, "t": 26, "d": [19,20], "a": 1 },
+						{ "px": [16,64], "src": [80,0], "f": 0, "t": 5, "d": [18,21], "a": 1 }
+					],
+					"seed": 9468401,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": []
+				}
+			],
+			"__neighbours": [ { "levelIid": "5538f9c0-6fc0-11f1-a52b-d73f3473c61b", "dir": "s" }, { "levelIid": "dcaa4c20-6fc0-11f1-a52b-0f1b543705dc", "dir": "n" } ]
 		},
 		{
 			"identifier": "Hallway_BRCorner_W2_3",
 			"iid": "d1785f50-6fc0-11f1-a512-9ddb26611344",
 			"uid": 48,
-			"worldX": -80,
-			"worldY": -352,
+			"worldX": -64,
+			"worldY": -240,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 80,
@@ -2113,8 +2385,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": -80,
-							"__worldY": -320
+							"__worldX": -64,
+							"__worldY": -208
 						},
 						{
 							"__identifier": "Door",
@@ -2129,8 +2401,8 @@
 							"defUid": 27,
 							"px": [16,0],
 							"fieldInstances": [],
-							"__worldX": -64,
-							"__worldY": -352
+							"__worldX": -48,
+							"__worldY": -240
 						}
 					]
 				},
@@ -2181,14 +2453,150 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [ { "levelIid": "c4e7f8e0-6fc0-11f1-a512-9957443febeb", "dir": "s" }, { "levelIid": "e5e05f10-6fc0-11f1-a512-958b215a8413", "dir": "n" } ]
+		},
+		{
+			"identifier": "Hallway_BRCorner_W2_7",
+			"iid": "dcaa4c20-6fc0-11f1-a52b-0f1b543705dc",
+			"uid": 67,
+			"worldX": -160,
+			"worldY": -240,
+			"worldDepth": 0,
+			"pxWid": 80,
+			"pxHei": 80,
+			"__bgColor": "#696A79",
+			"bgColor": null,
+			"useAutoIdentifier": false,
+			"bgRelPath": null,
+			"bgPos": null,
+			"bgPivotX": 0.5,
+			"bgPivotY": 0.5,
+			"__smartColor": "#ADADB5",
+			"__bgPos": null,
+			"externalRelPath": null,
+			"fieldInstances": [
+				{ "__identifier": "room_type", "__type": "LocalEnum.RoomTypes", "__value": "Hallway", "__tile": null, "defUid": 39, "realEditorValues": [] },
+				{ "__identifier": "weight", "__type": "Int", "__value": 10, "__tile": null, "defUid": 40, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }
+			],
+			"layerInstances": [
+				{
+					"__identifier": "Entities",
+					"__type": "Entities",
+					"__cWid": 5,
+					"__cHei": 5,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": null,
+					"__tilesetRelPath": null,
+					"iid": "dcaa4c21-6fc0-11f1-a52b-e5f40c141a2a",
+					"levelId": 67,
+					"layerDefUid": 36,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [],
+					"autoLayerTiles": [],
+					"seed": 3767797,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": [
+						{
+							"__identifier": "Door",
+							"__grid": [0,2],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#342100",
+							"iid": "dcaa4c22-6fc0-11f1-a52b-abfa9bf03a37",
+							"width": 16,
+							"height": 32,
+							"defUid": 27,
+							"px": [0,32],
+							"fieldInstances": [],
+							"__worldX": -160,
+							"__worldY": -208
+						},
+						{
+							"__identifier": "Door",
+							"__grid": [2,0],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#342100",
+							"iid": "dcaa4c23-6fc0-11f1-a52b-3326217f6d47",
+							"width": 32,
+							"height": 16,
+							"defUid": 27,
+							"px": [32,0],
+							"fieldInstances": [],
+							"__worldX": -128,
+							"__worldY": -240
+						}
+					]
+				},
+				{
+					"__identifier": "WallGrid",
+					"__type": "IntGrid",
+					"__cWid": 5,
+					"__cHei": 5,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": 1,
+					"__tilesetRelPath": "tilemap_packed.png",
+					"iid": "dcaa4c24-6fc0-11f1-a52b-8f843e5d722e",
+					"levelId": 67,
+					"layerDefUid": 4,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [1,1,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,0,1,1,1,1,1,1],
+					"autoLayerTiles": [
+						{ "px": [32,0], "src": [0,64], "f": 0, "t": 48, "d": [25,2], "a": 1 },
+						{ "px": [32,16], "src": [0,64], "f": 0, "t": 48, "d": [25,7], "a": 1 },
+						{ "px": [32,32], "src": [0,64], "f": 0, "t": 48, "d": [25,12], "a": 1 },
+						{ "px": [48,32], "src": [0,64], "f": 0, "t": 48, "d": [25,13], "a": 1 },
+						{ "px": [0,48], "src": [0,64], "f": 0, "t": 48, "d": [25,15], "a": 1 },
+						{ "px": [16,48], "src": [0,64], "f": 0, "t": 48, "d": [25,16], "a": 1 },
+						{ "px": [32,48], "src": [0,64], "f": 0, "t": 48, "d": [25,17], "a": 1 },
+						{ "px": [48,48], "src": [0,64], "f": 0, "t": 48, "d": [25,18], "a": 1 },
+						{ "px": [48,0], "src": [16,64], "f": 0, "t": 49, "d": [22,3], "a": 1 },
+						{ "px": [48,16], "src": [16,64], "f": 0, "t": 49, "d": [22,8], "a": 1 },
+						{ "px": [0,32], "src": [32,64], "f": 0, "t": 50, "d": [23,10], "a": 1 },
+						{ "px": [16,32], "src": [32,64], "f": 0, "t": 50, "d": [23,11], "a": 1 },
+						{ "px": [64,0], "src": [16,16], "f": 1, "t": 13, "d": [38,4], "a": 1 },
+						{ "px": [0,16], "src": [64,48], "f": 0, "t": 40, "d": [7,5], "a": 1 },
+						{ "px": [16,16], "src": [176,64], "f": 0, "t": 59, "d": [12,6], "a": 1 },
+						{ "px": [64,16], "src": [16,16], "f": 1, "t": 13, "d": [16,9], "a": 1 },
+						{ "px": [64,32], "src": [16,16], "f": 1, "t": 13, "d": [16,14], "a": 1 },
+						{ "px": [64,48], "src": [16,16], "f": 3, "t": 13, "d": [16,19], "a": 1 },
+						{ "px": [0,0], "src": [32,0], "f": 0, "t": 2, "d": [8,0], "a": 1 },
+						{ "px": [16,0], "src": [80,16], "f": 0, "t": 17, "d": [10,1], "a": 1 },
+						{ "px": [0,64], "src": [32,32], "f": 0, "t": 26, "d": [19,20], "a": 1 },
+						{ "px": [16,64], "src": [32,32], "f": 0, "t": 26, "d": [19,21], "a": 1 },
+						{ "px": [32,64], "src": [32,32], "f": 0, "t": 26, "d": [19,22], "a": 1 },
+						{ "px": [48,64], "src": [32,32], "f": 0, "t": 26, "d": [19,23], "a": 1 },
+						{ "px": [64,64], "src": [16,32], "f": 1, "t": 25, "d": [20,24], "a": 1 }
+					],
+					"seed": 9468401,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": []
+				}
+			],
+			"__neighbours": [ { "levelIid": "5fcd9032-6fc0-11f1-a52b-95205224d673", "dir": "s" }, { "levelIid": "e78b7bf0-6fc0-11f1-a52b-cf43612f4221", "dir": "n" } ]
 		},
 		{
 			"identifier": "Hallway_BRCorner_W2_4",
 			"iid": "e5e05f10-6fc0-11f1-a512-958b215a8413",
 			"uid": 49,
-			"worldX": -80,
-			"worldY": -480,
+			"worldX": -64,
+			"worldY": -320,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 80,
@@ -2244,8 +2652,8 @@
 							"defUid": 27,
 							"px": [16,0],
 							"fieldInstances": [],
-							"__worldX": -64,
-							"__worldY": -480
+							"__worldX": -48,
+							"__worldY": -320
 						},
 						{
 							"__identifier": "Door",
@@ -2260,8 +2668,8 @@
 							"defUid": 27,
 							"px": [48,32],
 							"fieldInstances": [],
-							"__worldX": -32,
-							"__worldY": -448
+							"__worldX": -16,
+							"__worldY": -288
 						}
 					]
 				},
@@ -2312,14 +2720,150 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [{ "levelIid": "d1785f50-6fc0-11f1-a512-9ddb26611344", "dir": "s" }]
+		},
+		{
+			"identifier": "Hallway_BRCorner_W2_8",
+			"iid": "e78b7bf0-6fc0-11f1-a52b-cf43612f4221",
+			"uid": 68,
+			"worldX": -160,
+			"worldY": -320,
+			"worldDepth": 0,
+			"pxWid": 80,
+			"pxHei": 80,
+			"__bgColor": "#696A79",
+			"bgColor": null,
+			"useAutoIdentifier": false,
+			"bgRelPath": null,
+			"bgPos": null,
+			"bgPivotX": 0.5,
+			"bgPivotY": 0.5,
+			"__smartColor": "#ADADB5",
+			"__bgPos": null,
+			"externalRelPath": null,
+			"fieldInstances": [
+				{ "__identifier": "room_type", "__type": "LocalEnum.RoomTypes", "__value": "Hallway", "__tile": null, "defUid": 39, "realEditorValues": [] },
+				{ "__identifier": "weight", "__type": "Int", "__value": 10, "__tile": null, "defUid": 40, "realEditorValues": [{ "id": "V_Int", "params": [10] }] }
+			],
+			"layerInstances": [
+				{
+					"__identifier": "Entities",
+					"__type": "Entities",
+					"__cWid": 5,
+					"__cHei": 5,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": null,
+					"__tilesetRelPath": null,
+					"iid": "e78b7bf1-6fc0-11f1-a52b-7d54b2ec9486",
+					"levelId": 68,
+					"layerDefUid": 36,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [],
+					"autoLayerTiles": [],
+					"seed": 3767797,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": [
+						{
+							"__identifier": "Door",
+							"__grid": [1,0],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#342100",
+							"iid": "e78b7bf2-6fc0-11f1-a52b-5f52d43c0c20",
+							"width": 32,
+							"height": 16,
+							"defUid": 27,
+							"px": [16,0],
+							"fieldInstances": [],
+							"__worldX": -144,
+							"__worldY": -320
+						},
+						{
+							"__identifier": "Door",
+							"__grid": [4,2],
+							"__pivot": [0,0],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#342100",
+							"iid": "e78b7bf3-6fc0-11f1-a52b-d3499fd9be67",
+							"width": 16,
+							"height": 32,
+							"defUid": 27,
+							"px": [64,32],
+							"fieldInstances": [],
+							"__worldX": -96,
+							"__worldY": -288
+						}
+					]
+				},
+				{
+					"__identifier": "WallGrid",
+					"__type": "IntGrid",
+					"__cWid": 5,
+					"__cHei": 5,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": 1,
+					"__tilesetRelPath": "tilemap_packed.png",
+					"iid": "e78b7bf4-6fc0-11f1-a52b-598b5901f8b1",
+					"levelId": 68,
+					"layerDefUid": 4,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [1,0,0,1,1,1,0,0,1,1,1,0,0,0,0,1,0,0,0,0,1,1,1,1,1],
+					"autoLayerTiles": [
+						{ "px": [16,0], "src": [0,64], "f": 0, "t": 48, "d": [25,1], "a": 1 },
+						{ "px": [32,0], "src": [0,64], "f": 0, "t": 48, "d": [25,2], "a": 1 },
+						{ "px": [32,16], "src": [0,64], "f": 0, "t": 48, "d": [25,7], "a": 1 },
+						{ "px": [16,32], "src": [0,64], "f": 0, "t": 48, "d": [25,11], "a": 1 },
+						{ "px": [32,32], "src": [0,64], "f": 0, "t": 48, "d": [25,12], "a": 1 },
+						{ "px": [16,48], "src": [0,64], "f": 0, "t": 48, "d": [25,16], "a": 1 },
+						{ "px": [32,48], "src": [0,64], "f": 0, "t": 48, "d": [25,17], "a": 1 },
+						{ "px": [48,48], "src": [0,64], "f": 0, "t": 48, "d": [25,18], "a": 1 },
+						{ "px": [64,48], "src": [0,64], "f": 0, "t": 48, "d": [25,19], "a": 1 },
+						{ "px": [16,16], "src": [16,64], "f": 0, "t": 49, "d": [22,6], "a": 1 },
+						{ "px": [64,32], "src": [32,64], "f": 0, "t": 50, "d": [23,14], "a": 1 },
+						{ "px": [48,32], "src": [48,64], "f": 0, "t": 51, "d": [26,13], "a": 1 },
+						{ "px": [0,0], "src": [16,16], "f": 0, "t": 13, "d": [38,0], "a": 1 },
+						{ "px": [64,16], "src": [64,48], "f": 0, "t": 40, "d": [7,9], "a": 1 },
+						{ "px": [48,16], "src": [144,64], "f": 0, "t": 57, "d": [11,8], "a": 1 },
+						{ "px": [0,16], "src": [16,16], "f": 0, "t": 13, "d": [16,5], "a": 1 },
+						{ "px": [0,32], "src": [16,16], "f": 0, "t": 13, "d": [16,10], "a": 1 },
+						{ "px": [0,48], "src": [16,16], "f": 2, "t": 13, "d": [16,15], "a": 1 },
+						{ "px": [64,0], "src": [32,0], "f": 0, "t": 2, "d": [8,4], "a": 1 },
+						{ "px": [48,0], "src": [64,16], "f": 0, "t": 16, "d": [9,3], "a": 1 },
+						{ "px": [16,64], "src": [32,32], "f": 0, "t": 26, "d": [19,21], "a": 1 },
+						{ "px": [32,64], "src": [32,32], "f": 0, "t": 26, "d": [19,22], "a": 1 },
+						{ "px": [48,64], "src": [32,32], "f": 0, "t": 26, "d": [19,23], "a": 1 },
+						{ "px": [64,64], "src": [32,32], "f": 0, "t": 26, "d": [19,24], "a": 1 },
+						{ "px": [0,64], "src": [16,32], "f": 0, "t": 25, "d": [20,20], "a": 1 }
+					],
+					"seed": 9468401,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": []
+				}
+			],
+			"__neighbours": [{ "levelIid": "dcaa4c20-6fc0-11f1-a52b-0f1b543705dc", "dir": "s" }]
 		},
 		{
 			"identifier": "Hallway_Horizontal_W2_2",
 			"iid": "46bf7020-6fc0-11f1-a512-0b772d8e87b4",
 			"uid": 51,
-			"worldX": -240,
-			"worldY": -144,
+			"worldX": -288,
+			"worldY": -256,
 			"worldDepth": 0,
 			"pxWid": 32,
 			"pxHei": 80,
@@ -2375,8 +2919,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": -240,
-							"__worldY": -112
+							"__worldX": -288,
+							"__worldY": -224
 						},
 						{
 							"__identifier": "Door",
@@ -2391,8 +2935,8 @@
 							"defUid": 27,
 							"px": [16,32],
 							"fieldInstances": [],
-							"__worldX": -224,
-							"__worldY": -112
+							"__worldX": -272,
+							"__worldY": -224
 						}
 					]
 				},
@@ -2439,8 +2983,8 @@
 			"identifier": "Hallway_Horizontal_W2_7",
 			"iid": "2beb1720-6fc0-11f1-a512-f9cfeffbfd7d",
 			"uid": 64,
-			"worldX": -176,
-			"worldY": -144,
+			"worldX": -304,
+			"worldY": -352,
 			"worldDepth": 0,
 			"pxWid": 48,
 			"pxHei": 80,
@@ -2496,8 +3040,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": -176,
-							"__worldY": -112
+							"__worldX": -304,
+							"__worldY": -320
 						},
 						{
 							"__identifier": "Door",
@@ -2512,8 +3056,8 @@
 							"defUid": 27,
 							"px": [32,32],
 							"fieldInstances": [],
-							"__worldX": -144,
-							"__worldY": -112
+							"__worldX": -272,
+							"__worldY": -320
 						}
 					]
 				},
@@ -2565,7 +3109,7 @@
 			"identifier": "Hallway_Horizontal_W2_5",
 			"iid": "5a90f4e0-6fc0-11f1-a512-29536d6a222d",
 			"uid": 55,
-			"worldX": -384,
+			"worldX": -288,
 			"worldY": -80,
 			"worldDepth": 0,
 			"pxWid": 32,
@@ -2622,7 +3166,7 @@
 							"defUid": 27,
 							"px": [16,32],
 							"fieldInstances": [],
-							"__worldX": -368,
+							"__worldX": -272,
 							"__worldY": -48
 						}
 					]
@@ -2664,14 +3208,14 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [{ "levelIid": "65aa4bb0-6fc0-11f1-a512-fbf0d2624541", "dir": "n" }]
 		},
 		{
 			"identifier": "Hallway_Horizontal_W2_6",
 			"iid": "65aa4bb0-6fc0-11f1-a512-fbf0d2624541",
 			"uid": 56,
-			"worldX": -384,
-			"worldY": -176,
+			"worldX": -288,
+			"worldY": -160,
 			"worldDepth": 0,
 			"pxWid": 32,
 			"pxHei": 80,
@@ -2727,8 +3271,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": -384,
-							"__worldY": -144
+							"__worldX": -288,
+							"__worldY": -128
 						}
 					]
 				},
@@ -2769,13 +3313,13 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [{ "levelIid": "5a90f4e0-6fc0-11f1-a512-29536d6a222d", "dir": "s" }]
 		},
 		{
 			"identifier": "Hallway_Horizontal_W2_3",
 			"iid": "1df5bcc0-6fc0-11f1-a512-a1bbe7f97fb1",
 			"uid": 53,
-			"worldX": -320,
+			"worldX": -224,
 			"worldY": -96,
 			"worldDepth": 0,
 			"pxWid": 48,
@@ -2832,7 +3376,7 @@
 							"defUid": 27,
 							"px": [0,48],
 							"fieldInstances": [],
-							"__worldX": -320,
+							"__worldX": -224,
 							"__worldY": -48
 						},
 						{
@@ -2848,7 +3392,7 @@
 							"defUid": 27,
 							"px": [32,32],
 							"fieldInstances": [],
-							"__worldX": -288,
+							"__worldX": -192,
 							"__worldY": -64
 						}
 					]
@@ -2898,14 +3442,14 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [{ "levelIid": "39332812-6fc0-11f1-a512-917736859e97", "dir": "n" }]
 		},
 		{
 			"identifier": "Hallway_Horizontal_W2_4",
 			"iid": "39332812-6fc0-11f1-a512-917736859e97",
 			"uid": 54,
-			"worldX": -320,
-			"worldY": -224,
+			"worldX": -224,
+			"worldY": -192,
 			"worldDepth": 0,
 			"pxWid": 48,
 			"pxHei": 96,
@@ -2961,8 +3505,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": -320,
-							"__worldY": -192
+							"__worldX": -224,
+							"__worldY": -160
 						},
 						{
 							"__identifier": "Door",
@@ -2977,8 +3521,8 @@
 							"defUid": 27,
 							"px": [32,48],
 							"fieldInstances": [],
-							"__worldX": -288,
-							"__worldY": -176
+							"__worldX": -192,
+							"__worldY": -144
 						}
 					]
 				},
@@ -3027,14 +3571,14 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [{ "levelIid": "1df5bcc0-6fc0-11f1-a512-a1bbe7f97fb1", "dir": "s" }]
 		},
 		{
-			"identifier": "Level_15",
+			"identifier": "Level_19",
 			"iid": "f10df9c0-48b0-11f1-938d-2b1fd25e17a5",
 			"uid": 44,
-			"worldX": 384,
-			"worldY": -256,
+			"worldX": 256,
+			"worldY": -240,
 			"worldDepth": 0,
 			"pxWid": 224,
 			"pxHei": 240,
@@ -3093,8 +3637,8 @@
 							"defUid": 27,
 							"px": [0,192],
 							"fieldInstances": [],
-							"__worldX": 384,
-							"__worldY": -64
+							"__worldX": 256,
+							"__worldY": -48
 						},
 						{
 							"__identifier": "Door",
@@ -3109,8 +3653,8 @@
 							"defUid": 27,
 							"px": [208,96],
 							"fieldInstances": [],
-							"__worldX": 592,
-							"__worldY": -160
+							"__worldX": 464,
+							"__worldY": -144
 						},
 						{
 							"__identifier": "Door",
@@ -3125,8 +3669,8 @@
 							"defUid": 27,
 							"px": [80,0],
 							"fieldInstances": [],
-							"__worldX": 464,
-							"__worldY": -256
+							"__worldX": 336,
+							"__worldY": -240
 						},
 						{
 							"__identifier": "Door",
@@ -3141,8 +3685,8 @@
 							"defUid": 27,
 							"px": [64,224],
 							"fieldInstances": [],
-							"__worldX": 448,
-							"__worldY": -32
+							"__worldX": 320,
+							"__worldY": -16
 						}
 					]
 				},
@@ -3394,10 +3938,10 @@
 			"__neighbours": []
 		},
 		{
-			"identifier": "Level_16",
+			"identifier": "Level_20",
 			"iid": "f4f8f080-6fc0-11f1-a512-c391f89abbce",
 			"uid": 45,
-			"worldX": 656,
+			"worldX": 512,
 			"worldY": -128,
 			"worldDepth": 0,
 			"pxWid": 256,
@@ -3457,7 +4001,7 @@
 							"defUid": 27,
 							"px": [0,48],
 							"fieldInstances": [],
-							"__worldX": 656,
+							"__worldX": 512,
 							"__worldY": -80
 						}
 					]
@@ -3625,10 +4169,10 @@
 			"__neighbours": []
 		},
 		{
-			"identifier": "Level_17",
+			"identifier": "Level_21",
 			"iid": "989b07a0-6fc0-11f1-a512-7beb1a3bc585",
 			"uid": 46,
-			"worldX": 656,
+			"worldX": 512,
 			"worldY": -272,
 			"worldDepth": 0,
 			"pxWid": 256,
@@ -3685,7 +4229,7 @@
 							"defUid": 27,
 							"px": [240,48],
 							"fieldInstances": [],
-							"__worldX": 896,
+							"__worldX": 752,
 							"__worldY": -224
 						}
 					]
@@ -3837,11 +4381,11 @@
 			"__neighbours": []
 		},
 		{
-			"identifier": "Level_18",
+			"identifier": "Level_22",
 			"iid": "58aa8900-6fc0-11f1-a512-478de51f0269",
 			"uid": 52,
-			"worldX": 976,
-			"worldY": -112,
+			"worldX": -464,
+			"worldY": -400,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 80,
@@ -3897,8 +4441,8 @@
 							"defUid": 27,
 							"px": [16,64],
 							"fieldInstances": [],
-							"__worldX": 992,
-							"__worldY": -48
+							"__worldX": -448,
+							"__worldY": -336
 						},
 						{
 							"__identifier": "Door",
@@ -3913,8 +4457,8 @@
 							"defUid": 27,
 							"px": [48,32],
 							"fieldInstances": [],
-							"__worldX": 1024,
-							"__worldY": -80
+							"__worldX": -416,
+							"__worldY": -368
 						},
 						{
 							"__identifier": "Door",
@@ -3929,8 +4473,8 @@
 							"defUid": 27,
 							"px": [16,0],
 							"fieldInstances": [],
-							"__worldX": 992,
-							"__worldY": -112
+							"__worldX": -448,
+							"__worldY": -400
 						},
 						{
 							"__identifier": "Door",
@@ -3945,8 +4489,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": 976,
-							"__worldY": -80
+							"__worldX": -464,
+							"__worldY": -368
 						}
 					]
 				},
@@ -3997,14 +4541,14 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [{ "levelIid": "c07f1720-6fc0-11f1-a512-a57a25e1db18", "dir": "s" }]
 		},
 		{
-			"identifier": "Level_19",
+			"identifier": "Level_23",
 			"iid": "b964da60-6fc0-11f1-a512-f70c974d8e47",
 			"uid": 59,
-			"worldX": 1104,
-			"worldY": -112,
+			"worldX": -464,
+			"worldY": -160,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 80,
@@ -4060,8 +4604,8 @@
 							"defUid": 27,
 							"px": [48,32],
 							"fieldInstances": [],
-							"__worldX": 1152,
-							"__worldY": -80
+							"__worldX": -416,
+							"__worldY": -128
 						},
 						{
 							"__identifier": "Door",
@@ -4076,8 +4620,8 @@
 							"defUid": 27,
 							"px": [16,0],
 							"fieldInstances": [],
-							"__worldX": 1120,
-							"__worldY": -112
+							"__worldX": -448,
+							"__worldY": -160
 						},
 						{
 							"__identifier": "Door",
@@ -4092,8 +4636,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": 1104,
-							"__worldY": -80
+							"__worldX": -464,
+							"__worldY": -128
 						}
 					]
 				},
@@ -4144,14 +4688,14 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [ { "levelIid": "fbb245b2-6fc0-11f1-a512-eb361fc69a12", "dir": "s" }, { "levelIid": "d4f01790-6fc0-11f1-a512-b5c6848805a5", "dir": "n" } ]
 		},
 		{
-			"identifier": "Level_20",
+			"identifier": "Level_24",
 			"iid": "c07f1720-6fc0-11f1-a512-a57a25e1db18",
 			"uid": 60,
-			"worldX": 1216,
-			"worldY": -112,
+			"worldX": -464,
+			"worldY": -320,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 80,
@@ -4207,8 +4751,8 @@
 							"defUid": 27,
 							"px": [16,0],
 							"fieldInstances": [],
-							"__worldX": 1232,
-							"__worldY": -112
+							"__worldX": -448,
+							"__worldY": -320
 						},
 						{
 							"__identifier": "Door",
@@ -4223,8 +4767,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": 1216,
-							"__worldY": -80
+							"__worldX": -464,
+							"__worldY": -288
 						},
 						{
 							"__identifier": "Door",
@@ -4239,8 +4783,8 @@
 							"defUid": 27,
 							"px": [16,64],
 							"fieldInstances": [],
-							"__worldX": 1232,
-							"__worldY": -48
+							"__worldX": -448,
+							"__worldY": -256
 						}
 					]
 				},
@@ -4291,14 +4835,14 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [ { "levelIid": "58aa8900-6fc0-11f1-a512-478de51f0269", "dir": "n" }, { "levelIid": "d4f01790-6fc0-11f1-a512-b5c6848805a5", "dir": "s" } ]
 		},
 		{
-			"identifier": "Level_21",
+			"identifier": "Level_25",
 			"iid": "fbb245b2-6fc0-11f1-a512-eb361fc69a12",
 			"uid": 62,
-			"worldX": 1424,
-			"worldY": -112,
+			"worldX": -464,
+			"worldY": -80,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 80,
@@ -4354,8 +4898,8 @@
 							"defUid": 27,
 							"px": [16,0],
 							"fieldInstances": [],
-							"__worldX": 1440,
-							"__worldY": -112
+							"__worldX": -448,
+							"__worldY": -80
 						},
 						{
 							"__identifier": "Door",
@@ -4370,8 +4914,8 @@
 							"defUid": 27,
 							"px": [48,32],
 							"fieldInstances": [],
-							"__worldX": 1472,
-							"__worldY": -80
+							"__worldX": -416,
+							"__worldY": -48
 						},
 						{
 							"__identifier": "Door",
@@ -4386,8 +4930,8 @@
 							"defUid": 27,
 							"px": [16,64],
 							"fieldInstances": [],
-							"__worldX": 1440,
-							"__worldY": -48
+							"__worldX": -448,
+							"__worldY": -16
 						}
 					]
 				},
@@ -4438,14 +4982,14 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [{ "levelIid": "b964da60-6fc0-11f1-a512-f70c974d8e47", "dir": "n" }]
 		},
 		{
-			"identifier": "Level_22",
+			"identifier": "Level_26",
 			"iid": "d4f01790-6fc0-11f1-a512-b5c6848805a5",
 			"uid": 61,
-			"worldX": 1312,
-			"worldY": -112,
+			"worldX": -464,
+			"worldY": -240,
 			"worldDepth": 0,
 			"pxWid": 64,
 			"pxHei": 80,
@@ -4501,8 +5045,8 @@
 							"defUid": 27,
 							"px": [0,32],
 							"fieldInstances": [],
-							"__worldX": 1312,
-							"__worldY": -80
+							"__worldX": -464,
+							"__worldY": -208
 						},
 						{
 							"__identifier": "Door",
@@ -4517,8 +5061,8 @@
 							"defUid": 27,
 							"px": [16,64],
 							"fieldInstances": [],
-							"__worldX": 1328,
-							"__worldY": -48
+							"__worldX": -448,
+							"__worldY": -176
 						},
 						{
 							"__identifier": "Door",
@@ -4533,8 +5077,8 @@
 							"defUid": 27,
 							"px": [48,32],
 							"fieldInstances": [],
-							"__worldX": 1360,
-							"__worldY": -80
+							"__worldX": -416,
+							"__worldY": -208
 						}
 					]
 				},
@@ -4585,7 +5129,7 @@
 					"entityInstances": []
 				}
 			],
-			"__neighbours": []
+			"__neighbours": [ { "levelIid": "b964da60-6fc0-11f1-a512-f70c974d8e47", "dir": "s" }, { "levelIid": "c07f1720-6fc0-11f1-a512-a57a25e1db18", "dir": "n" } ]
 		}
 	],
 	"worlds": [],

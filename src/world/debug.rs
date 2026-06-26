@@ -58,6 +58,12 @@ pub fn debug_grid(mut gizmos: Gizmos, camera: Query<&Transform, With<Camera2d>>)
         Vec2::new(0.0, 8.0),
         Color::srgb(1.0, 0.0, 0.0),
     );
+
+    gizmos.circle_2d(
+        Isometry2d::new(cam.translation.truncate(), Rot2::default()),
+        CAMERA_SPAWN_DIST,
+        Color::srgba(1.0, 1.0, 1.0, 0.1),
+    );
 }
 
 pub fn debug_room_bounds(

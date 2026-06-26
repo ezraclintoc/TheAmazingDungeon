@@ -43,6 +43,16 @@ pub struct Room {
     pub room: RoomDef,
 }
 
+impl Room {
+    pub fn new(roomdef: &RoomDef, world_x: f32, world_y: f32) -> Self{
+        Room {
+            world_x,
+            world_y,
+            room: roomdef.clone(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct DoorDef {
     pub x: i32, // local
@@ -59,22 +69,22 @@ pub struct Door {
 }
 
 impl Door {
+    pub fn new(room: &Room, door: &DoorDef) -> Self {
+        Door {
+            door: door.clone(),
+            world_x: room.world_x + (door.x * 16) as f32 + door.dir.door_offset(door.width as f32).x,
+            world_y: room.world_y + (-door.y * 16) as f32 + door.dir.door_offset(door.width as f32).y,
+        }
+    }
+
     pub fn get_bounding_box(&self) -> (Vec2, Vec2) {
-        let pos = Vec2::new(self.world_x, self.world_y)
-            + Vec2::new(
-                self.door.dir.as_vec().x * 16.0,
-                if self.door.dir.is_horizontal() {
-                    8.0
-                } else {
-                    self.door.dir.as_vec().y * 16.0
-                },
-            );
-        let size = if self.door.dir.is_horizontal() {
-            Vec2::new(32.0, 80.0)
-        } else {
-            Vec2::new(64.0, 32.0)
-        };
-        (pos, size)
+        let pos = Vec2::new(self.world_x, self.world_y) + self.door.dir.as_vec()*16.0;
+        match self.door.dir {
+            Dir::N => (pos+Vec2::new(0.0, 8.0), Vec2::new(64.0, 48.0)),
+            Dir::S => (pos, Vec2::new(64.0, 32.0)),
+            Dir::E => (pos+Vec2::new(0.0, 8.0), Vec2::new(32.0, 80.0)),
+            Dir::W => (pos+Vec2::new(0.0, 8.0), Vec2::new(32.0, 80.0)),
+        }
     }
 }
 
@@ -152,12 +162,7 @@ impl Dir {
     }
 }
 
-pub fn rects_collide(
-    center_a: Vec2,
-    size_a: Vec2,
-    top_left_b: Vec2,
-    size_b: Vec2,
-) -> bool {
+pub fn rects_collide(center_a: Vec2, size_a: Vec2, top_left_b: Vec2, size_b: Vec2) -> bool {
     // rect A from center
     let a_left = center_a.x - size_a.x / 2.0;
     let a_right = center_a.x + size_a.x / 2.0;
@@ -170,10 +175,7 @@ pub fn rects_collide(
     let b_top = top_left_b.y;
     let b_bottom = top_left_b.y - size_b.y;
 
-    a_left < b_right
-        && a_right > b_left
-        && a_bottom < b_top
-        && a_top > b_bottom
+    a_left < b_right && a_right > b_left && a_bottom < b_top && a_top > b_bottom
 }
 
 #[derive(Resource)]

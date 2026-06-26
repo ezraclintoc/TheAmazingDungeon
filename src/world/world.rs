@@ -10,6 +10,7 @@ use crate::world::LdtkHandle;
 
 const MAX_ROOMS: usize = 1000;
 const MAX_ROOMS_PER_FRAME: usize = 10;
+pub const CAMERA_SPAWN_DIST: f32 = 1000.0;
 
 pub fn create_room_index(
     projects: Query<&LdtkProjectHandle>,
@@ -115,7 +116,7 @@ pub fn create_room_index(
 }
 
 fn place_room(
-    room: &RoomDef,
+    roomdef: &RoomDef,
     world_x: f32,
     world_y: f32,
     connecting_door: &DoorDef,
@@ -123,13 +124,13 @@ fn place_room(
     world_state: &mut ResMut<WorldState>,
     ldtk_handle: &Handle<LdtkProject>,
 ) {
-    let level_set = LevelSet::from_iids([room.iid.clone()]);
+    let level_set = LevelSet::from_iids([roomdef.iid.clone()]);
     commands.spawn((LdtkWorldBundle {
         ldtk_handle: ldtk_handle.clone().into(),
         level_set,
         transform: Transform::from_xyz(
-            world_x - room.offset_x as f32,
-            world_y + room.offset_y as f32,
+            world_x - roomdef.offset_x as f32,
+            world_y + roomdef.offset_y as f32,
             50.0,
         ),
         ..default()
@@ -137,18 +138,15 @@ fn place_room(
     world_state.rooms.push(Room {
         world_x: world_x as f32,
         world_y: world_y as f32,
-        room: room.clone(),
+        room: roomdef.clone(),
     });
 
-    for door in &room.doors {
+    let room = world_state.rooms.last().unwrap().clone();
+    for door in &roomdef.doors {
         if door.x == connecting_door.x && door.y == connecting_door.y {
             continue;
         }
-        world_state.open_doors.push(Door {
-            door: door.clone(),
-            world_x: world_x + (door.x * 16) as f32 + door.dir.door_offset(door.width as f32).x,
-            world_y: world_y + (-door.y * 16) as f32 + door.dir.door_offset(door.width as f32).y,
-        });
+        world_state.open_doors.push(Door::new(&room, &door));
     }
 }
 
@@ -207,7 +205,7 @@ pub fn generation_loop(
     let mut nearby_doors: Vec<usize> = (0..world_state.open_doors.len())
         .filter(|&i| {
             let door = &world_state.open_doors[i];
-            Vec2::new(door.world_x, door.world_y).distance(cam_pos) <= 200.0
+            Vec2::new(door.world_x, door.world_y).distance(cam_pos) <= CAMERA_SPAWN_DIST
         })
         .collect();
 
@@ -271,22 +269,20 @@ pub fn generation_loop(
                 continue;
             }
 
+            let r = Room::new(room, room_world_pos.x, room_world_pos.y);
+
             //Makes sure all doors (of the room we are about to place) can go forward
+            // if !check_door_collision(&r, &door, &world_state) {
+            //     continue;
+            // }
+
             let mut collision = false;
             for dd in &room.doors {
                 if dd == matching_door {
                     continue;
                 }
 
-                let d = Door {
-                    door: dd.clone(),
-                    world_x: room_world_pos.x
-                        + (dd.x * 16) as f32
-                        + dd.dir.door_offset(dd.width as f32).x,
-                    world_y: room_world_pos.y
-                        + (-dd.y * 16) as f32
-                        + dd.dir.door_offset(dd.width as f32).y,
-                };
+                let d = Door::new(&r, dd);
                 if !check_new_door_collision(&d, &world_state) {
                     collision = true;
                 }
@@ -295,16 +291,7 @@ pub fn generation_loop(
                 continue;
             }
 
-            if !check_current_door_collision(
-                &Room {
-                    room: room.clone(),
-                    world_x: room_world_pos.x,
-                    world_y: room_world_pos.y,
-                },
-                &door,
-                &world_state,
-            ) {
-                info!("Colliding");
+            if !check_current_door_collision(&r, &door, &world_state) {
                 continue;
             }
 
@@ -361,6 +348,77 @@ fn check_room_bounds(
     true
 }
 
+pub fn check_door_collision(room: &Room, connecting_door: &Door, world_state: &WorldState) -> bool {
+    for door in &world_state.open_doors {
+        if door == connecting_door {
+            continue;
+        }
+
+        if rects_collide(
+            door.get_bounding_box().0,
+            door.get_bounding_box().1,
+            Vec2::new(room.world_x, room.world_y),
+            Vec2::new(room.room.width as f32, room.room.height as f32),
+        ) {
+            let colliding_door_pos = Vec2::new(door.world_x, door.world_y); // + door.door.dir.as_vec() * 16.0;
+            let mut matching_door = false;
+            for dd in &room.room.doors {
+                if dd.dir == door.door.dir.opposite() {
+                    let door_pos = Vec2::new(
+                        room.world_x + (dd.x * 16) as f32 + dd.dir.door_offset(dd.width as f32).x,
+                        room.world_y + (-dd.y * 16) as f32 + dd.dir.door_offset(dd.width as f32).y,
+                    );
+
+                    if door_pos == colliding_door_pos {
+                        matching_door = true;
+                    }
+                }
+            }
+            if !matching_door {
+                return false;
+            }
+        }
+    }
+    for dd in &room.room.doors {
+        // if *dd == connecting_door.door {
+        //     continue;
+        // }
+
+        let door = Door::new(room, dd);
+        for room in &world_state.rooms {
+            if rects_collide(
+                door.get_bounding_box().0,
+                door.get_bounding_box().1,
+                Vec2::new(room.world_x, room.world_y),
+                Vec2::new(room.room.width as f32, room.room.height as f32),
+            ) {
+                let colliding_door_pos = Vec2::new(door.world_x, door.world_y); // + door.door.dir.as_vec() * 16.0;
+                let mut matching_door = false;
+                for dd in &room.room.doors {
+                    if dd.dir == door.door.dir.opposite() {
+                        let door_pos = Vec2::new(
+                            room.world_x
+                                + (dd.x * 16) as f32
+                                + dd.dir.door_offset(dd.width as f32).x,
+                            room.world_y
+                                + (-dd.y * 16) as f32
+                                + dd.dir.door_offset(dd.width as f32).y,
+                        );
+
+                        if door_pos == colliding_door_pos {
+                            matching_door = true;
+                        }
+                    }
+                }
+                if !matching_door {
+                    return false;
+                }
+            }
+        }
+    }
+    true
+}
+
 pub fn check_new_door_collision(door: &Door, world_state: &WorldState) -> bool {
     for room in &world_state.rooms {
         if rects_collide(
@@ -369,7 +427,23 @@ pub fn check_new_door_collision(door: &Door, world_state: &WorldState) -> bool {
             Vec2::new(room.world_x, room.world_y),
             Vec2::new(room.room.width as f32, room.room.height as f32),
         ) {
-            return false;
+            let colliding_door_pos = Vec2::new(door.world_x, door.world_y); // + door.door.dir.as_vec() * 16.0;
+            let mut found_matching_door = false;
+            for dd in &room.room.doors {
+                if dd.dir == door.door.dir.opposite() {
+                    let door_pos = Vec2::new(
+                        room.world_x + (dd.x * 16) as f32 + dd.dir.door_offset(dd.width as f32).x,
+                        room.world_y + (-dd.y * 16) as f32 + dd.dir.door_offset(dd.width as f32).y,
+                    );
+
+                    if door_pos == colliding_door_pos {
+                        found_matching_door = true;
+                    }
+                }
+            }
+            if !found_matching_door {
+                return false;
+            }
         }
     }
     true
@@ -391,7 +465,23 @@ pub fn check_current_door_collision(
             Vec2::new(room.world_x, room.world_y),
             Vec2::new(room.room.width as f32, room.room.height as f32),
         ) {
-            return false;
+            let colliding_door_pos = Vec2::new(door.world_x, door.world_y); // + door.door.dir.as_vec() * 16.0;
+            let mut found_matching_door = false;
+            for dd in &room.room.doors {
+                if dd.dir == door.door.dir.opposite() {
+                    let door_pos = Vec2::new(
+                        room.world_x + (dd.x * 16) as f32 + dd.dir.door_offset(dd.width as f32).x,
+                        room.world_y + (-dd.y * 16) as f32 + dd.dir.door_offset(dd.width as f32).y,
+                    );
+
+                    if door_pos == colliding_door_pos {
+                        found_matching_door = true;
+                    }
+                }
+            }
+            if !found_matching_door {
+                return false;
+            }
         }
     }
     true
