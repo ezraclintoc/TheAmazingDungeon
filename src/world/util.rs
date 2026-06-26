@@ -59,13 +59,7 @@ pub struct Door {
     pub world_y: f32,
 }
 
-
-#[derive(Component)]
-pub struct PlacedRoomMarker {
-    pub iid: String,
-}
-
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Clone)]
 pub struct WorldState {
     pub initialized: bool,
     pub open_doors: Vec<Door>,

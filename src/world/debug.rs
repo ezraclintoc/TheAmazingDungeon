@@ -3,6 +3,14 @@ use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
 
 use super::util::*;
 
+pub fn debug_open_doors(mut gizmos: Gizmos, world_state: Res<WorldState>){
+    for door in &world_state.open_doors {
+        gizmos.circle_2d(
+            Isometry2d::new(Vec2::new(door.world_x,door.world_y), Rot2::default()), 2.0, Color::srgba(1.0, 0.2, 0.2, 1.0)
+        );
+    }
+}
+
 pub fn debug_grid(mut gizmos: Gizmos, camera: Query<&Transform, With<Camera2d>>) {
     let Ok(cam) = camera.single() else { return; };
     

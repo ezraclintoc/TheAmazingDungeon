@@ -135,9 +135,6 @@ fn place_room(
             ),
             ..default()
         },
-        PlacedRoomMarker {
-            iid: room.iid.clone(),
-        },
     ));
     world_state.rooms.push(Room {
         world_x: world_x as f32,
@@ -225,10 +222,11 @@ pub fn generation_loop(
     });
 
     let rng = &mut world_rng.0;
-    let mut rooms_generated = 0;
+    let mut filled_doors = Vec::new();
+
 
     for door_idx in nearby_doors {
-        if rooms_generated >= MAX_ROOMS_PER_FRAME {
+        if filled_doors.len() >= MAX_ROOMS_PER_FRAME {
             break;
         }
 
@@ -251,7 +249,6 @@ pub fn generation_loop(
         candidates.shuffle(rng);
 
         let mut tried: HashSet<usize> = HashSet::new();
-        let mut placed = false;
         for &room_idx_pick in &candidates {
             if tried.contains(&room_idx_pick) {
                 continue;
@@ -259,7 +256,11 @@ pub fn generation_loop(
             tried.insert(room_idx_pick);
 
             let room = &room_idx.rooms[room_idx_pick];
-            let Some(matching_door) = room.doors.iter().find(|d| d.dir == dir.opposite()) else {
+            let mut matching_door_idx = 0;
+            let Some(matching_door) = room.doors.iter().find(|d| {
+                matching_door_idx += 1;
+                d.dir == dir.opposite()
+            }) else {
                 continue;
             };
 
@@ -269,7 +270,7 @@ pub fn generation_loop(
             let room_world_pos =
                 -matching_door_vec + Vec2::new(door.world_x, door.world_y) + dir.as_vec() * 16.0;
 
-            if !can_place_room(room, room_world_pos.x, room_world_pos.y, &world_state, 0.0) {
+            if !check_room_bounds(room, room_world_pos.x, room_world_pos.y, &world_state, 0.0) {
                 continue;
             }
 
@@ -282,15 +283,19 @@ pub fn generation_loop(
                 &mut world_state,
                 &ldtk_handle.0,
             );
-            rooms_generated += 1;
 
-            info!("Placed room at {:?}", room_world_pos);
+            filled_doors.push(door_idx);
+
             break;
         }
     }
+
+    filled_doors.sort();
+    filled_doors.reverse();
+    filled_doors.iter().for_each(|idx| {world_state.open_doors.swap_remove(*idx); } );
 }
 
-fn can_place_room(
+fn check_room_bounds(
     room: &RoomDef,
     world_x: f32,
     world_y: f32,
@@ -318,4 +323,8 @@ fn can_place_room(
         }
     }
     true
+}
+
+fn check_door_collision(room: &RoomDef, world_x: f32, world_y: f32, world_state: &WorldState) {
+    todo!();
 }
