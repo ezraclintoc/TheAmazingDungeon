@@ -86,6 +86,14 @@ impl Door {
             Dir::W => (pos+Vec2::new(0.0, 8.0), Vec2::new(32.0, 80.0)),
         }
     }
+
+    pub fn world_pos(&self) -> Vec2 {
+        return Vec2::new(self.world_x, self.world_y)
+    }
+
+    pub fn local_pos(&self) -> Vec2 {
+        return Vec2::new(self.door.x as f32, self.door.y as f32)
+    }
 }
 
 #[derive(Resource, Default, Clone)]

@@ -7,7 +7,7 @@ use super::world::*;
 pub fn debug_open_doors(mut gizmos: Gizmos, world_state: Res<WorldState>) {
     for door in &world_state.open_doors {
         gizmos.circle_2d(
-            Isometry2d::new(Vec2::new(door.world_x, door.world_y), Rot2::default()),
+            Isometry2d::new(door.world_pos(), Rot2::default()),
             2.0,
             Color::srgba(1.0, 0.2, 0.2, 1.0),
         );

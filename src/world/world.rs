@@ -9,7 +9,7 @@ use super::util::*;
 use crate::world::LdtkHandle;
 
 const MAX_ROOMS: usize = 1000;
-const MAX_ROOMS_PER_FRAME: usize = 10;
+const MAX_ROOMS_PER_FRAME: usize = 100;
 pub const CAMERA_SPAWN_DIST: f32 = 1000.0;
 
 pub fn create_room_index(
@@ -119,11 +119,10 @@ fn place_room(
     roomdef: &RoomDef,
     world_x: f32,
     world_y: f32,
-    connecting_door: &DoorDef,
     commands: &mut Commands,
     world_state: &mut ResMut<WorldState>,
     ldtk_handle: &Handle<LdtkProject>,
-) {
+) -> bool {
     let level_set = LevelSet::from_iids([roomdef.iid.clone()]);
     commands.spawn((LdtkWorldBundle {
         ldtk_handle: ldtk_handle.clone().into(),
@@ -142,12 +141,28 @@ fn place_room(
     });
 
     let room = world_state.rooms.last().unwrap().clone();
-    for door in &roomdef.doors {
-        if door.x == connecting_door.x && door.y == connecting_door.y {
-            continue;
+    for doordef in &roomdef.doors {
+        let door = Door::new(&room, doordef);
+
+        let mut found_matching_door_idx: usize = 0;
+        let mut found_matching_door = false;
+
+        for dd in &world_state.open_doors {
+            found_matching_door_idx += 1;
+
+            if door.world_pos() == dd.world_pos() {
+                found_matching_door_idx -= 1;
+                break;
+            }
         }
-        world_state.open_doors.push(Door::new(&room, &door));
+
+        if found_matching_door_idx < world_state.open_doors.len() {
+            world_state.open_doors.swap_remove(found_matching_door_idx);
+        } else {
+            world_state.open_doors.push(door);
+        }
     }
+    true
 }
 
 pub fn generation_loop(
@@ -177,12 +192,6 @@ pub fn generation_loop(
             spawn_room,
             0.0,
             0.0,
-            &DoorDef {
-                x: 0,
-                y: 0,
-                width: 0,
-                dir: Dir::N,
-            },
             &mut commands,
             &mut world_state,
             &ldtk_handle.0,
@@ -192,7 +201,7 @@ pub fn generation_loop(
     }
 
     if placed_rooms.iter().len() >= MAX_ROOMS {
-        warn!("Too many rooms! Over {} rooms!", MAX_ROOMS);
+        //warn!("Too many rooms! Over {} rooms!", MAX_ROOMS);
         return;
     }
 
@@ -218,10 +227,10 @@ pub fn generation_loop(
     });
 
     let rng = &mut world_rng.0;
-    let mut filled_doors = Vec::new();
+    let mut rooms_to_be_placed = Vec::new();
 
     for door_idx in nearby_doors {
-        if filled_doors.len() >= MAX_ROOMS_PER_FRAME {
+        if rooms_to_be_placed.len() >= MAX_ROOMS_PER_FRAME {
             break;
         }
 
@@ -229,7 +238,6 @@ pub fn generation_loop(
         let dir = door.door.dir;
 
         let Some(room_indices) = room_idx.by_door_dir.get(&dir.opposite()) else {
-            world_state.open_doors.remove(door_idx);
             continue;
         };
 
@@ -251,11 +259,7 @@ pub fn generation_loop(
             tried.insert(room_idx_pick);
 
             let room = &room_idx.rooms[room_idx_pick];
-            let mut matching_door_idx = 0;
-            let Some(matching_door) = room.doors.iter().find(|d| {
-                matching_door_idx += 1;
-                d.dir == dir.opposite()
-            }) else {
+            let Some(matching_door) = room.doors.iter().find(|d| d.dir == dir.opposite()) else {
                 continue;
             };
 
@@ -272,50 +276,26 @@ pub fn generation_loop(
             let r = Room::new(room, room_world_pos.x, room_world_pos.y);
 
             //Makes sure all doors (of the room we are about to place) can go forward
-            // if !check_door_collision(&r, &door, &world_state) {
-            //     continue;
-            // }
-
-            let mut collision = false;
-            for dd in &room.doors {
-                if dd == matching_door {
-                    continue;
-                }
-
-                let d = Door::new(&r, dd);
-                if !check_new_door_collision(&d, &world_state) {
-                    collision = true;
-                }
-            }
-            if collision == true {
+            if !check_door_collision(&r, &door, &world_state) {
                 continue;
             }
 
-            if !check_current_door_collision(&r, &door, &world_state) {
-                continue;
-            }
-
-            place_room(
-                room,
-                room_world_pos.x,
-                room_world_pos.y,
-                matching_door,
-                &mut commands,
-                &mut world_state,
-                &ldtk_handle.0,
-            );
-
-            filled_doors.push(door_idx);
+            rooms_to_be_placed.push((room, room_world_pos.x, room_world_pos.y));
 
             break;
         }
     }
 
-    filled_doors.sort();
-    filled_doors.reverse();
-    filled_doors.iter().for_each(|idx| {
-        world_state.open_doors.swap_remove(*idx);
-    });
+    for (room, world_x, world_y) in rooms_to_be_placed {
+        place_room(
+            room,
+            world_x,
+            world_y,
+            &mut commands,
+            &mut world_state,
+            &ldtk_handle.0,
+        );
+    }
 }
 
 fn check_room_bounds(
@@ -349,72 +329,32 @@ fn check_room_bounds(
 }
 
 pub fn check_door_collision(room: &Room, connecting_door: &Door, world_state: &WorldState) -> bool {
-    for door in &world_state.open_doors {
-        if door == connecting_door {
+    let Some(matching_door) = room
+        .room
+        .doors
+        .iter()
+        .find(|d| d.dir == connecting_door.door.dir.opposite())
+    else {
+        return false;
+    };
+
+    let mut collision = false;
+    for dd in &room.room.doors {
+        if dd == matching_door {
             continue;
         }
 
-        if rects_collide(
-            door.get_bounding_box().0,
-            door.get_bounding_box().1,
-            Vec2::new(room.world_x, room.world_y),
-            Vec2::new(room.room.width as f32, room.room.height as f32),
-        ) {
-            let colliding_door_pos = Vec2::new(door.world_x, door.world_y); // + door.door.dir.as_vec() * 16.0;
-            let mut matching_door = false;
-            for dd in &room.room.doors {
-                if dd.dir == door.door.dir.opposite() {
-                    let door_pos = Vec2::new(
-                        room.world_x + (dd.x * 16) as f32 + dd.dir.door_offset(dd.width as f32).x,
-                        room.world_y + (-dd.y * 16) as f32 + dd.dir.door_offset(dd.width as f32).y,
-                    );
-
-                    if door_pos == colliding_door_pos {
-                        matching_door = true;
-                    }
-                }
-            }
-            if !matching_door {
-                return false;
-            }
+        let d = Door::new(room, dd);
+        if !check_new_door_collision(&d, &world_state) {
+            collision = true;
         }
     }
-    for dd in &room.room.doors {
-        // if *dd == connecting_door.door {
-        //     continue;
-        // }
+    if collision == true {
+        return false;
+    }
 
-        let door = Door::new(room, dd);
-        for room in &world_state.rooms {
-            if rects_collide(
-                door.get_bounding_box().0,
-                door.get_bounding_box().1,
-                Vec2::new(room.world_x, room.world_y),
-                Vec2::new(room.room.width as f32, room.room.height as f32),
-            ) {
-                let colliding_door_pos = Vec2::new(door.world_x, door.world_y); // + door.door.dir.as_vec() * 16.0;
-                let mut matching_door = false;
-                for dd in &room.room.doors {
-                    if dd.dir == door.door.dir.opposite() {
-                        let door_pos = Vec2::new(
-                            room.world_x
-                                + (dd.x * 16) as f32
-                                + dd.dir.door_offset(dd.width as f32).x,
-                            room.world_y
-                                + (-dd.y * 16) as f32
-                                + dd.dir.door_offset(dd.width as f32).y,
-                        );
-
-                        if door_pos == colliding_door_pos {
-                            matching_door = true;
-                        }
-                    }
-                }
-                if !matching_door {
-                    return false;
-                }
-            }
-        }
+    if !check_current_door_collision(room, &connecting_door, &world_state) {
+        return false;
     }
     true
 }
