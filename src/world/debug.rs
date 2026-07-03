@@ -1,15 +1,15 @@
 use bevy::{log::tracing_subscriber::layer::Layered, prelude::*};
 use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
 
-use super::util::*;
-use super::world::*;
+use super::types::*;
+use super::pipeline::*;
 
 pub fn debug_open_doors(mut gizmos: Gizmos, world_state: Res<WorldState>) {
     for door in &world_state.open_doors {
         gizmos.circle_2d(
-            Isometry2d::new(door.world_pos(), Rot2::default()),
+            Isometry2d::new(door.world_pos, Rot2::default()),
             2.0,
-            Color::srgba(1.0, 0.2, 0.2, 1.0),
+            Color::srgba(0.2, 1.0, 0.2, 1.0),
         );
     }
 }
@@ -72,14 +72,14 @@ pub fn debug_room_bounds(
     room_idx: Res<RoomIndex>,
 ) {
     for room in &world_state.rooms {
-        let x = room.world_x + room.room.width as f32 / 2.0; //gt.translation().x;// + room.width as f32 / 2.0 + room.offset_x;
-        let y = room.world_y - room.room.height as f32 / 2.0; //gt.translation().y;// + room.height as f32 / 2.0;
+        let x = room.world_pos.x + room.room.size.x as f32 / 2.0; //gt.translation().x;// + room.width as f32 / 2.0 + room.offset_x;
+        let y = room.world_pos.y - room.room.size.y as f32 / 2.0; //gt.translation().y;// + room.height as f32 / 2.0;
 
         gizmos.circle_2d(Vec2::new(x, y), 2.0, Color::srgba(1.0, 0.2, 0.2, 1.0));
 
         gizmos.rect_2d(
             Vec2::new(x, y),
-            Vec2::new(room.room.width as f32, room.room.height as f32),
+            room.room.size.as_vec2(),
             Color::srgba(0.0, 1.0, 0.0, 0.15),
         );
     }
@@ -97,7 +97,6 @@ pub fn regenerate_on_key(
         }
         world_state.open_doors.clear();
         world_state.rooms.clear();
-        world_state.initialized = false;
     }
 }
 

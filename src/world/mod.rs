@@ -1,25 +1,36 @@
-mod world;
-mod util;
+mod pipeline;
+mod types;
 mod debug;
 
 use bevy::{log::tracing_subscriber::layer::Layered, prelude::*};
 use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
 
-use self::world::*;
-use self::util::*;
+use self::pipeline::*;
+use self::types::*;
 use self::debug::*;
 pub struct WorldPlugin;
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<RoomIndex>()
-            .init_resource::<WorldRng>()
+        app.init_state::<GenerationState>()
+            .init_resource::<RoomIndex>()
             .init_resource::<WorldState>()
-            .insert_resource(ClearColor(Color::srgb_u8(118,  59, 54)))
+            .init_resource::<GenTask>()
+            .insert_resource(ClearColor(Color::srgb_u8(118, 59, 54)))
             .add_systems(Startup, setup_world)
-            .add_systems(Update, create_room_index)
-            .add_systems(Update, (debug_grid, regenerate_on_key, debug_open_doors))//, debug_door_collision))
-            .add_systems(PostUpdate, generation_loop.after(TransformSystems::Propagate));
+            .add_systems(
+                Update,
+                is_ldtk_loaded.run_if(in_state(GenerationState::AssetLoading)),
+            )
+            .add_systems(
+                Update,
+                create_room_index.run_if(in_state(GenerationState::Indexing)),
+            )
+            .add_systems(
+                Update,
+                (spawn_if_idle, poll_task).chain().run_if(in_state(GenerationState::Ready)),
+            )
+            .add_systems(Update, (debug_open_doors, debug_room_bounds, debug_door_collision, debug_grid));
     }
 }
 
