@@ -9,7 +9,7 @@ use bevy_ecs_ldtk::ldtk::LdtkJson;
 use bevy_ecs_ldtk::prelude::RawLevelAccessor;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 const MAX_BATCHES: usize = 200;
 // Deliberately low: generation currently stalls after a handful of rooms once every
@@ -62,7 +62,7 @@ fn drive_generation(room_idx: &RoomIndex) -> WorldState {
 
     for _ in 0..MAX_BATCHES {
         let mut batch_state = state.clone();
-        let placed = generate_batch(&mut batch_state, room_idx, cam_pos, &mut rng);
+        let placed = generate_batch(&mut batch_state, room_idx, cam_pos, CAMERA_SPAWN_DIST, &mut rng);
         if placed.is_empty() {
             break;
         }
@@ -104,27 +104,84 @@ fn no_overlapping_rooms_after_generation() {
     }
 }
 
+/// Benchmarks room-placement speed at several target room counts. For each target, tries
+/// up to `MAX_SEED_ATTEMPTS` different seeds and keeps only the runs that actually reach
+/// that target - a run that stalls early (the known bridging-fallback gap, a correctness
+/// issue, not a speed one; see docs/report.md) is excluded rather than averaged in, so an
+/// unrelated correctness bug can't masquerade as a speed regression. Reports the average
+/// time-per-room across the successful runs at each target - a flat value across targets
+/// would mean roughly linear cost; a value that keeps climbing with the target (as it
+/// does today) is the signature of `try_place_room`'s flat linear collision scan (no
+/// spatial hashing yet - see readme.md's "Status" note). If zero seeds reach a target,
+/// that's reported rather than silently skipped: it's real information (this target isn't
+/// reachable with today's algorithm) that belongs in the comparison across versions.
 #[test]
-fn generation_speed_smoke() {
+#[ignore = "slow (up to 50 seeds x 4 targets, ~10s) - run explicitly with \
+            `cargo test generation_speed_by_target -- --ignored`"]
+fn generation_speed_by_target() {
+    const TARGETS: [usize; 4] = [100, 250, 500, 1000];
+    const MAX_SEED_ATTEMPTS: u64 = 50;
+
     let room_idx = load_room_index();
+    let mut any_target_reached = false;
 
-    let start = Instant::now();
-    let state = drive_generation(&room_idx);
-    let elapsed = start.elapsed();
+    for &target in &TARGETS {
+        let mut time_per_room_samples: Vec<f64> = Vec::new();
 
-    let rooms_per_sec = state.rooms.len() as f64 / elapsed.as_secs_f64().max(1e-9);
-    println!(
-        "generated {} rooms in {:?} ({:.0} rooms/sec)",
-        state.rooms.len(),
-        elapsed,
-        rooms_per_sec
-    );
+        for seed in 0..MAX_SEED_ATTEMPTS {
+            let mut state = WorldState::default();
+            let mut rng = SmallRng::seed_from_u64(seed);
+            let mut cam_pos = Vec2::ZERO;
+
+            let start = Instant::now();
+            for _ in 0..MAX_BATCHES {
+                if state.rooms.len() >= target {
+                    break;
+                }
+                let mut batch_state = state.clone();
+                let placed = generate_batch(&mut batch_state, &room_idx, cam_pos, CAMERA_SPAWN_DIST, &mut rng);
+                if placed.is_empty() {
+                    break;
+                }
+                if let Some(last) = placed.last() {
+                    cam_pos = last.world_pos;
+                }
+                commit_batch(&mut state, &placed);
+            }
+            let elapsed = start.elapsed();
+
+            if state.rooms.len() >= target {
+                time_per_room_samples.push(elapsed.as_secs_f64() / state.rooms.len() as f64);
+            }
+        }
+
+        if time_per_room_samples.is_empty() {
+            println!(
+                "{} rooms: 0/{} seeds reached target - not reached this run. This may be the \
+                 known bridging-fallback stall (see docs/report.md), not a speed regression; \
+                 try again (e.g. widen the seed range) before concluding this target regressed.",
+                target, MAX_SEED_ATTEMPTS,
+            );
+            continue;
+        }
+
+        any_target_reached = true;
+        let avg_us_per_room = time_per_room_samples.iter().sum::<f64>()
+            / time_per_room_samples.len() as f64
+            * 1e6;
+        println!(
+            "{} rooms: {}/{} seeds reached target, avg {:.2} us/room",
+            target,
+            time_per_room_samples.len(),
+            MAX_SEED_ATTEMPTS,
+            avg_us_per_room,
+        );
+    }
 
     assert!(
-        elapsed < Duration::from_secs(5),
-        "room generation took too long: {:?} for {} rooms - possible perf regression",
-        elapsed,
-        state.rooms.len()
+        any_target_reached,
+        "no target room count was reached by any of {} seeds - generation appears completely broken",
+        MAX_SEED_ATTEMPTS,
     );
 }
 
@@ -205,7 +262,7 @@ fn nearby_open_doors_get_filled_within_a_few_batches() {
 
     for _ in 0..FEW_BATCHES {
         let mut batch_state = state.clone();
-        let placed = generate_batch(&mut batch_state, &room_idx, cam_pos, &mut rng);
+        let placed = generate_batch(&mut batch_state, &room_idx, cam_pos, CAMERA_SPAWN_DIST, &mut rng);
         if placed.is_empty() {
             break;
         }

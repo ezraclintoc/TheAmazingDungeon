@@ -1,7 +1,7 @@
 use bevy::tasks::{AsyncComputeTaskPool, block_on, poll_once};
 use bevy::prelude::*;
 use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
-use rand::SeedableRng;
+use rand::{RngExt, SeedableRng};
 use rand::seq::SliceRandom;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
@@ -140,6 +140,7 @@ pub fn spawn_if_idle(
     state: Res<WorldState>,
     camera: Query<&GlobalTransform, With<Camera2d>>,
     room_idx: Res<RoomIndex>,
+    mut gen_rng: ResMut<GenRng>,
 ) {
     if task.0.is_some() {
         return;
@@ -157,21 +158,29 @@ pub fn spawn_if_idle(
 
     let room_idx = room_idx.clone();
 
-    let mut rng = rand::rngs::SmallRng::seed_from_u64(42);
+    // Draw this batch's seed from the session RNG (advancing it) instead of reseeding a
+    // constant every batch - the latter made every batch's "random" shuffle resolve the
+    // same way for structurally similar situations, producing the repeating-patterns bug.
+    let mut rng = rand::rngs::SmallRng::seed_from_u64(gen_rng.0.random());
 
     task.0 = Some(pool.spawn(async move {
-        generate_batch(&mut state, &room_idx, cam_pos, &mut rng)
+        generate_batch(&mut state, &room_idx, cam_pos, CAMERA_SPAWN_DIST, &mut rng)
     }));
 }
 
-/// Runs one generation batch: finds open doors near `cam_pos`, tries to fill each with
-/// a compatible room via [`try_place_room`], and returns whatever got placed. Mutates
-/// `state` in place so later doors in the same batch see earlier placements. Pure
-/// function so it's callable directly in tests without `AsyncComputeTaskPool`/ECS.
+/// Runs one generation batch: finds open doors within `search_dist` of `cam_pos`, tries
+/// to fill each with a compatible room via [`try_place_room`], and returns whatever got
+/// placed. Mutates `state` in place so later doors in the same batch see earlier
+/// placements. Pure function so it's callable directly in tests without
+/// `AsyncComputeTaskPool`/ECS. `search_dist` is a parameter (rather than always using
+/// `CAMERA_SPAWN_DIST`) so tests can pass a much larger radius to measure generation
+/// throughput without the camera-distance frontier being the bottleneck; `spawn_if_idle`
+/// always passes the real `CAMERA_SPAWN_DIST` for production behavior.
 pub fn generate_batch(
     state: &mut WorldState,
     room_idx: &RoomIndex,
     cam_pos: Vec2,
+    search_dist: f32,
     rng: &mut rand::rngs::SmallRng,
 ) -> Vec<Room> {
     let mut placed_rooms: Vec<Room> = Vec::new();
@@ -193,7 +202,7 @@ pub fn generate_batch(
             let mut nearby_doors: Vec<Door> = state
                 .open_doors
                 .iter()
-                .filter(|d| d.world_pos.distance(cam_pos) <= CAMERA_SPAWN_DIST)
+                .filter(|d| d.world_pos.distance(cam_pos) <= search_dist)
                 .cloned()
                 .collect();
 

@@ -1,5 +1,6 @@
 use bevy::tasks::Task;
 use bevy::prelude::*;
+use rand::rngs::SmallRng;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -58,6 +59,13 @@ impl Room {
 
 #[derive(Resource, Default)]
 pub struct GenTask(pub Option<Task<Vec<Room>>>);
+
+/// The single RNG threaded through the whole generation session. `spawn_if_idle` draws
+/// one seed from this per batch instead of reseeding a constant every batch (the cause
+/// of the "repeating patterns" bug - see docs/report.md), so consecutive batches get
+/// different candidate shuffles while the whole session stays reproducible from one seed.
+#[derive(Resource)]
+pub struct GenRng(pub SmallRng);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DoorDef {
