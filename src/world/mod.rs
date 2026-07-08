@@ -1,6 +1,8 @@
 mod pipeline;
 mod types;
 mod debug;
+mod spatial_hash;
+
 #[cfg(test)]
 mod tests;
 
