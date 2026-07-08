@@ -1,8 +1,12 @@
-use bevy::tasks::Task;
+use super::spatial_hash::SpatialHash;
 use bevy::prelude::*;
+use bevy::tasks::Task;
 use rand::rngs::SmallRng;
 use std::collections::HashMap;
 use std::str::FromStr;
+
+//TODO: derive cell size from ldtk level
+const DEFAULT_CELL_SIZE: f32 = 128.0;
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum GenerationState {
@@ -106,10 +110,43 @@ impl Door {
     }
 }
 
-#[derive(Resource, Default, Clone)]
+#[derive(Resource, Clone)]
 pub struct WorldState {
     pub open_doors: Vec<Door>,
     pub rooms: Vec<Room>,
+    pub room_grid: SpatialHash,
+}
+
+impl Default for WorldState {
+    fn default() -> Self {
+        WorldState {
+            open_doors: Vec::new(),
+            rooms: Vec::new(),
+            room_grid: SpatialHash::new(DEFAULT_CELL_SIZE),
+        }
+    }
+}
+
+impl WorldState {
+    pub fn add_room(&mut self, room: Room) {
+        let index = self.rooms.len();
+        let world_pos = room.world_pos;
+        let size = room.room.size.as_vec2();
+        self.rooms.push(room.clone());
+        for doordef in &room.room.doors {
+            let door = Door::new(&room, doordef);
+            if let Some(idx) = self
+                .open_doors
+                .iter()
+                .position(|d| d.world_pos == door.world_pos)
+            {
+                self.open_doors.swap_remove(idx);
+            } else {
+                self.open_doors.push(door);
+            }
+        }
+        self.room_grid.insert(index, world_pos, size);
+    }
 }
 
 #[derive(Resource, Default, Clone)]
@@ -223,11 +260,7 @@ pub fn rects_collide_center(center_a: Vec2, size_a: Vec2, center_b: Vec2, size_b
     a_left < b_right && a_right > b_left && a_bottom < b_top && a_top > b_bottom
 }
 
-/// Returns every room in the catalog that can simultaneously fill both `door_a` and
-/// `door_b` (in catalog order), not just the first one found. `try_place_room` needs
-/// to be able to fall back to the next candidate if the first one it tries fails its
-/// own validation (e.g. collides with something else) - stopping at the first match
-/// here would make that fallback impossible.
+/// Returns every catalog room that can fill both door_a and door_b, not just the first.
 pub fn find_bridging_room(door_a: &Door, door_b: &Door, room_idx: &RoomIndex) -> Vec<Room> {
     let mut candidates = Vec::new();
     for candidate in &room_idx.rooms {
@@ -236,9 +269,7 @@ pub fn find_bridging_room(door_a: &Door, door_b: &Door, room_idx: &RoomIndex) ->
                 continue;
             }
 
-            // Solve Door::new's formula for room.world_pos, given that d1 (facing
-            // door_a.dir.opposite(), guaranteed by the check above) must land exactly
-            // on door_a.world_pos once this candidate room is placed.
+            // solve Door::new's formula for room.world_pos so d1 lands on door_a
             let room_world_pos = door_a.world_pos
                 - d1.local_pos.as_vec2() * 16.0
                 - d1.dir.door_offset(d1.width as f32) * Vec2::new(0.0, 1.0);

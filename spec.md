@@ -46,23 +46,36 @@ an RNG:
 Placements within a batch mutate a local `WorldState` copy immediately, so later doors in
 the same batch see earlier placements.
 
+### Spatial indexing - `SpatialHash` (`spatial_hash.rs`)
+
+A uniform grid: `cells: HashMap<(i32,i32), Vec<usize>>` keyed by cell coordinate,
+storing indices into `WorldState.rooms`. `insert`/`query` both floor-divide a rect's
+four bounds by `cell_size` and enumerate every cell the rect overlaps (multi-cell for
+rects larger than one cell); `query` dedupes via a `HashSet` before returning. Scoped to
+`rooms` only (append-only, so indices stay valid) - `open_doors` (which uses
+`swap_remove`, invalidating indices) stays a linear scan. `WorldState::add_room` is the
+one place that pushes to `rooms`, inserts into the grid, and does open-door bookkeeping
+together, so the grid can't drift out of sync with the Vec.
+
 ### Placement validation - `try_place_room` (`pipeline.rs`)
 
 Returns `Option<Vec<Room>>` (a placement plus any bridging rooms it required). Checks, in
 order:
 
-1. New room's rect vs. every already-placed room's rect - the one unconditional,
-   real visual-safety guarantee (no two rooms' tiles are ever drawn overlapping).
-2. New room's door clearance boxes vs. placed room rects - allowed only if it lands
-   exactly on an existing door spot, or if the door is actively completing a connection
-   to an already-open door (that clearance was already validated when the neighbor
-   providing the open door was placed).
-3. Existing open doors' clearance boxes vs. the new room's whole footprint - closes the
-   "doors overlap unrelated rooms" class of bug; allowed only if it's the new room's own
-   matching door.
-4. New room's doors vs. other open doors' clearance boxes - a collision here triggers
-   `find_bridging_room`, tried recursively (bounded by `MAX_BRIDGE_DEPTH`) across every
-   candidate that could simultaneously fill both doors, not just the first one found.
+1. New room's rect vs. `room_grid.query(...)` candidates near the new room's footprint -
+   the one unconditional, real visual-safety guarantee (no two rooms' tiles are ever
+   drawn overlapping).
+2. New room's door clearance boxes vs. `room_grid.query(...)` candidates per door
+   (queried separately from step 1, since a door's clearance box can extend past the
+   room's own footprint) - allowed only if it lands exactly on an existing door spot, or
+   if the door is actively completing a connection to an already-open door.
+3. Existing open doors' clearance boxes vs. the new room's whole footprint (linear scan
+   over `open_doors`) - closes the "doors overlap unrelated rooms" class of bug; allowed
+   only if it's the new room's own matching door.
+4. New room's doors vs. other open doors' clearance boxes (linear scan) - a collision
+   here triggers `find_bridging_room`, tried recursively (bounded by `MAX_BRIDGE_DEPTH`)
+   across every candidate that could simultaneously fill both doors, not just the first
+   one found.
 
 ### Bridging - `find_bridging_room` (`types.rs`)
 
@@ -81,26 +94,37 @@ constant every batch, which was the cause of a "repeating patterns" bug (every b
 
 ### Known complexity characteristic
 
-`try_place_room` step 1 is a flat linear scan over every already-placed room - there is
-no spatial hashing/chunking yet (tracked as a roadmap item in `readme.md`). Placing the
-i-th room therefore costs O(i) work, so total generation time for n rooms is expected to
-be roughly O(n^2). The benchmark history below exists specifically to give a concrete
-"before" baseline for when that changes.
+Steps 1-2 of `try_place_room` are now grid-backed (see "Spatial indexing" above), so
+per-room cost should scale close to flat with total room count rather than the O(n)
+per-room / O(n^2) total cost of the old linear scan. Steps 3-4 (`open_doors`) are still
+a linear scan, but that set is small (the dungeon's "frontier"), not the whole placed
+history. The benchmark history below now shows the actual before/after: per-room cost
+climb from 100->1000 rooms dropped from ~6.2x (pre-spatial-hash) to ~1.67x.
+
+Also observed post-spatial-hash: seed-reachability at higher targets dropped a lot
+(e.g. 1000 rooms: 22/50 seeds -> 1/50). This looks unrelated to speed - the leading
+suspect is a real behavior change in `try_place_room`'s bridging path: the `pretend`
+state used to validate a bridge candidate now goes through `WorldState::add_room`
+(which also does open-door bookkeeping) instead of a plain `rooms.push`, so
+`pretend.open_doors` is no longer identical to the real `open_doors` during recursive
+bridge validation like it used to be. Not yet root-caused with certainty - worth
+digging into before trusting the "reaches 1000 rooms" claim at face value.
 
 ## Current Performance
 
-As of the working tree on top of commit `12443ae` (2026-07-08, uncommitted changes
-covering the RNG session-seeding fix and this benchmark's redesign):
+As of merging `feature/spatial-hashing` into `main` (2026-07-08, merge commit not yet
+created - this reflects the staged merge on top of `main`'s `b233949`):
 
-- **100 rooms**: avg 38.37 us/room (41/50 seeds reached target)
-- **250 rooms**: avg 68.46 us/room (39/50 seeds reached target)
-- **500 rooms**: avg 118.93 us/room (35/50 seeds reached target)
-- **1000 rooms**: avg 236.18 us/room (22/50 seeds reached target)
+- **100 rooms**: avg 33.13 us/room (30/50 seeds reached target)
+- **250 rooms**: avg 38.73 us/room (18/50 seeds reached target)
+- **500 rooms**: avg 44.87 us/room (7/50 seeds reached target)
+- **1000 rooms**: avg 55.31 us/room (1/50 seeds reached target)
 
-Per-room cost climbs ~6.2x as the target grows 10x (100 -> 1000 rooms) - consistent with
-`try_place_room`'s O(n) per-room linear scan (see "Known complexity characteristic"
-above). A version with spatial hashing should show this staying much flatter across
-targets instead of climbing.
+Per-room cost climbs only ~1.67x as the target grows 10x (100 -> 1000 rooms), down from
+~6.2x before spatial hashing - the flattening the grid was built to deliver. But
+seed-reachability at higher targets dropped sharply (see "Known complexity
+characteristic" above) - likely a real bug in bridging validation, not a speed issue,
+and worth fixing before leaning on the 1000-room number.
 
 ## Benchmark History
 
@@ -112,9 +136,10 @@ excluded rather than averaged in, so that unrelated bug can't masquerade as a sp
 change). Cells are `avg us/room (seeds reached/50)`; `N/A` means zero seeds reached that
 target this run, which is itself meaningful (worth a Notes callout, not silently dropped).
 
-| Date       | Commit    | 100 rooms     | 250 rooms     | 500 rooms      | 1000 rooms     | Notes                                                                                                                                                                                                 |
-|------------|-----------|---------------|---------------|----------------|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 2026-07-08 | `12443ae` | 38.37 (41/50) | 68.46 (39/50) | 118.93 (35/50) | 236.18 (22/50) | Baseline before spatial hashing. Numbers refreshed on a second run of the same pending (uncommitted) working tree - small movement vs. the first measurement is normal seed noise, not a code change. |
+| Date       | Commit                      | 100 rooms     | 250 rooms     | 500 rooms      | 1000 rooms     | Notes                                                                                                                                                                                                                                                                                                                                                                                                          |
+|------------|-----------------------------|---------------|---------------|----------------|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 2026-07-08 | `12443ae`                   | 38.37 (41/50) | 68.46 (39/50) | 118.93 (35/50) | 236.18 (22/50) | Baseline before spatial hashing. Numbers refreshed on a second run of the same pending (uncommitted) working tree - small movement vs. the first measurement is normal seed noise, not a code change.                                                                                                                                                                                                          |
+| 2026-07-08 | `b233949`+`b25bad2` (merge) | 33.13 (30/50) | 38.73 (18/50) | 44.87 (7/50)   | 55.31 (1/50)   | First post-spatial-hashing measurement (merge of feature/spatial-hashing into main, not yet committed). Per-room cost flattened a lot (see Current Performance), but seed-reachability at higher targets dropped sharply - suspected bridging-validation bug (pretend.add_room now runs open-door bookkeeping it didn't before), not a speed regression. Needs follow-up before trusting the 1000-room number. |
 
 ### Performance Chart
 

@@ -26,24 +26,10 @@ fn load_room_index() -> RoomIndex {
     build_room_index(json.iter_raw_levels())
 }
 
-/// Commits a batch's placed rooms into the persistent world state: same door
-/// bookkeeping `poll_task` does in `pipeline.rs` (swap-remove on a matching open door,
-/// otherwise register the door as newly open).
+/// Commits a batch's placed rooms; door bookkeeping happens inside add_room.
 fn commit_batch(state: &mut WorldState, placed: &[super::types::Room]) {
     for room in placed {
-        state.rooms.push(room.clone());
-        for doordef in &room.room.doors {
-            let door = Door::new(room, doordef);
-            if let Some(idx) = state
-                .open_doors
-                .iter()
-                .position(|d| d.world_pos == door.world_pos)
-            {
-                state.open_doors.swap_remove(idx);
-            } else {
-                state.open_doors.push(door);
-            }
-        }
+        state.add_room(room.clone());
     }
 }
 

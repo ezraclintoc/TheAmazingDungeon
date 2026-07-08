@@ -1,5 +1,5 @@
-use bevy::tasks::{AsyncComputeTaskPool, block_on, poll_once};
 use bevy::prelude::*;
+use bevy::tasks::{AsyncComputeTaskPool, block_on, poll_once};
 use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
 use rand::{RngExt, SeedableRng};
 use rand::seq::SliceRandom;
@@ -9,7 +9,7 @@ use std::str::FromStr;
 use super::types::*;
 use crate::world::LdtkHandle;
 
-const MAX_ROOMS: usize = 1000;
+const MAX_ROOMS: usize = 10000;
 pub const CAMERA_SPAWN_DIST: f32 = 1000.0;
 
 pub fn is_ldtk_loaded(
@@ -168,14 +168,7 @@ pub fn spawn_if_idle(
     }));
 }
 
-/// Runs one generation batch: finds open doors within `search_dist` of `cam_pos`, tries
-/// to fill each with a compatible room via [`try_place_room`], and returns whatever got
-/// placed. Mutates `state` in place so later doors in the same batch see earlier
-/// placements. Pure function so it's callable directly in tests without
-/// `AsyncComputeTaskPool`/ECS. `search_dist` is a parameter (rather than always using
-/// `CAMERA_SPAWN_DIST`) so tests can pass a much larger radius to measure generation
-/// throughput without the camera-distance frontier being the bottleneck; `spawn_if_idle`
-/// always passes the real `CAMERA_SPAWN_DIST` for production behavior.
+/// Runs one generation batch, mutating `state` in place so later doors see earlier placements.
 pub fn generate_batch(
     state: &mut WorldState,
     room_idx: &RoomIndex,
@@ -276,22 +269,7 @@ pub fn generate_batch(
                     };
 
                     for placed in &rooms_to_place {
-                        // 1. make later checks see this room
-                        state.rooms.push(placed.clone());
-
-                        // 2. update working door list, same bookkeeping as poll_task
-                        for doordef in &placed.room.doors {
-                            let door = Door::new(placed, doordef);
-                            if let Some(idx) = state
-                                .open_doors
-                                .iter()
-                                .position(|d| d.world_pos == door.world_pos)
-                            {
-                                state.open_doors.swap_remove(idx);
-                            } else {
-                                state.open_doors.push(door);
-                            }
-                        }
+                        state.add_room(placed.clone());
                         placed_rooms.push(placed.clone());
                     }
 
@@ -333,28 +311,8 @@ pub fn poll_task(
                 ..default()
             },));
 
-            state.rooms.push(room.clone());
-
-            for doordef in &room.room.doors {
-                let door = Door::new(&room, doordef);
-
-                let mut found_matching_door_idx: usize = 0;
-
-                for d in &state.open_doors {
-                    found_matching_door_idx += 1;
-
-                    if door.world_pos == d.world_pos {
-                        found_matching_door_idx -= 1;
-                        break;
-                    }
-                }
-
-                if found_matching_door_idx < state.open_doors.len() {
-                    state.open_doors.swap_remove(found_matching_door_idx);
-                } else {
-                    state.open_doors.push(door);
-                }
-            }
+            // add_room also handles open_doors bookkeeping
+            state.add_room(room.clone());
         }
         task.0 = None;
     }
@@ -378,57 +336,62 @@ pub fn try_place_room(
     let mut result = vec![room.clone()];
 
     // 1. room rect vs placed rooms
-    for r in &state.rooms {
-        if rects_collide_tl(
-            room.world_pos,
-            room.room.size.as_vec2(),
-            r.world_pos,
-            r.room.size.as_vec2(),
-        ) {
-            return None;
-        }
+    if state
+        .room_grid
+        .query(room.world_pos, room.room.size.as_vec2())
+        .any(|idx| {
+            rects_collide_tl(
+                room.world_pos,
+                room.room.size.as_vec2(),
+                state.rooms[idx].world_pos,
+                state.rooms[idx].room.size.as_vec2(),
+            )
+        })
+    {
+        return None;
     }
 
-    // 2. new room's doors vs placed rooms - only allowed on an existing door spot
-    for r in &state.rooms {
-        for doordef in &room.room.doors {
-            let door = Door::new(room, doordef);
+    // 2. new room's doors vs placed rooms - queried per door
+    for doordef in &room.room.doors {
+        let door = Door::new(room, doordef);
 
-            // A door that's actively completing a connection to an already-open door
-            // right now doesn't need its own forward wall clearance checked - that
-            // space is already spoken for by the neighbor providing the open door
-            // (validated when that neighbor was placed), not empty space this door is
-            // reserving for some future, still-unknown room. Only doors that aren't
-            // part of this specific connection need the clearance check below.
-            let is_active_connection = state
-                .open_doors
-                .iter()
-                .any(|d| d.world_pos == door.world_pos && d.door.dir == doordef.dir.opposite());
-            if is_active_connection {
-                continue;
-            }
+        // door completing a connection to an already-open door - no clearance check needed
+        let is_active_connection = state
+            .open_doors
+            .iter()
+            .any(|d| d.world_pos == door.world_pos && d.door.dir == doordef.dir.opposite());
+        if is_active_connection {
+            continue;
+        }
 
-            if rects_collide(
-                door.get_bounding_box().0,
-                door.get_bounding_box().1,
-                r.world_pos,
-                r.room.size.as_vec2(),
-            ) {
+        let (bbox_center, bbox_size) = door.get_bounding_box();
+        // center -> top-left for SpatialHash::query; y is +size/2 here, not -size/2 (y-up-but-extends-down)
+        let bbox_top_left = Vec2::new(
+            bbox_center.x - bbox_size.x / 2.0,
+            bbox_center.y + bbox_size.y / 2.0,
+        );
+
+        let collides = state
+            .room_grid
+            .query(bbox_top_left, bbox_size)
+            .any(|idx| {
+                let r = &state.rooms[idx];
+                if !rects_collide(bbox_center, bbox_size, r.world_pos, r.room.size.as_vec2()) {
+                    return false;
+                }
                 let is_door_spot = r
                     .room
                     .doors
                     .iter()
                     .any(|d| Door::new(r, d).world_pos == door.world_pos);
-                if !is_door_spot {
-                    return None;
-                }
-            }
+                !is_door_spot
+            });
+        if collides {
+            return None;
         }
     }
 
-    // 3. existing open doors vs new room's whole footprint - an open door protruding
-    // into the new room's body is only allowed if it's one of the new room's own doors
-    // (matched by both world_pos and opposite dir, per the door-matching convention)
+    // 3. existing open doors vs new room's whole footprint
     for existing in &state.open_doors {
         if !rects_collide(
             existing.get_bounding_box().0,
@@ -439,7 +402,8 @@ pub fn try_place_room(
             continue;
         }
         let is_own_door = room.room.doors.iter().any(|d| {
-            d.dir == existing.door.dir.opposite() && Door::new(room, d).world_pos == existing.world_pos
+            d.dir == existing.door.dir.opposite()
+                && Door::new(room, d).world_pos == existing.world_pos
         });
         if !is_own_door {
             return None;
@@ -458,13 +422,9 @@ pub fn try_place_room(
             if rects_collide_center(nc, ns, ec, es) {
                 // pretend `room` is placed, then validate the bridge
                 let mut pretend = state.clone();
-                pretend.rooms.push(room.clone());
+                pretend.add_room(room.clone());
 
-                // Try every candidate that can fill both doors, not just the first one
-                // find_bridging_room finds - a candidate that satisfies the door-pair
-                // match can still fail try_place_room's own validation (e.g. it
-                // collides with something else nearby), and that shouldn't sink the
-                // whole placement if another candidate would have worked.
+                // try every candidate, not just the first, since one may fail validation
                 let bridge_candidates = find_bridging_room(&new_door, existing, room_idx);
                 let bridge_rooms = bridge_candidates
                     .iter()
