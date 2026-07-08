@@ -109,8 +109,8 @@ pub fn regenerate_on_key(
         for entity in &worlds {
             commands.entity(entity).despawn();
         }
-        world_state.open_doors.clear();
-        world_state.rooms.clear();
+        // full reset, not per-field .clear() - room_grid must reset with rooms
+        *world_state = WorldState::default();
     }
 }
 
