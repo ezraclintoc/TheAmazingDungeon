@@ -1,9 +1,11 @@
 mod pipeline;
 mod types;
 mod debug;
+#[cfg(test)]
+mod tests;
 
-use bevy::{log::tracing_subscriber::layer::Layered, prelude::*};
-use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
+use bevy::prelude::*;
+use bevy_ecs_ldtk::prelude::*;
 
 use self::pipeline::*;
 use self::types::*;
@@ -30,7 +32,7 @@ impl Plugin for WorldPlugin {
                 Update,
                 (spawn_if_idle, poll_task).chain().run_if(in_state(GenerationState::Ready)),
             )
-            .add_systems(Update, (debug_open_doors, debug_room_bounds, debug_door_collision, debug_grid));
+            .add_systems(Update, (debug_open_doors, debug_room_bounds, debug_door_collision, debug_grid, regenerate_on_key));
     }
 }
 

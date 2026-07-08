@@ -10,6 +10,7 @@ dependencies = [
  "bevy 0.18.1",
  "bevy_ecs_ldtk",
  "rand 0.10.1",
+ "serde_json",
 ]
 
 [[package]]

@@ -3,3 +3,6 @@
 shell.nix
 /.direnv
 /assets/rooms
+CLAUDE.md
+/docs
+/.claude

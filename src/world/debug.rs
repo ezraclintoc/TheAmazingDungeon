@@ -1,8 +1,8 @@
-use bevy::{log::tracing_subscriber::layer::Layered, prelude::*};
-use bevy_ecs_ldtk::{ldtk::Level, prelude::*};
+use bevy::prelude::*;
+use bevy_ecs_ldtk::prelude::*;
 
-use super::types::*;
 use super::pipeline::*;
+use super::types::*;
 
 pub fn debug_open_doors(mut gizmos: Gizmos, world_state: Res<WorldState>) {
     for door in &world_state.open_doors {
@@ -14,38 +14,53 @@ pub fn debug_open_doors(mut gizmos: Gizmos, world_state: Res<WorldState>) {
     }
 }
 
-pub fn debug_grid(mut gizmos: Gizmos, camera: Query<&Transform, With<Camera2d>>) {
+pub fn debug_grid(
+    mut gizmos: Gizmos,
+    camera: Query<&Transform, With<Camera2d>>,
+    windows: Query<&Window>,
+) {
     let Ok(cam) = camera.single() else {
+        return;
+    };
+    let Ok(window) = windows.single() else {
         return;
     };
 
     let cam_x = cam.translation.x;
     let cam_y = cam.translation.y;
 
-    let range = 500.0;
+    let range = CAMERA_SPAWN_DIST * 1.75;
     let step = 16.0;
 
-    let x_start = ((cam_x - range) / step).floor() * step;
-    let y_start = ((cam_y - range) / step).floor() * step;
+    // PanCamera zooms by scaling the camera's transform (smaller scale = zoomed in
+    // more; see bevy_camera_controller::pan_camera), so the visible viewport in world
+    // units is the window size scaled by that factor. Only draw the grid once we're
+    // zoomed in far enough that the CAMERA_SPAWN_DIST circle no longer fits on screen.
+    let visible_half_extent = window.width().min(window.height()) / 2.0 * cam.scale.z;
 
-    for i in 0..((range * 2.0 / step) as i32) {
-        let x = x_start + i as f32 * step;
-        let y = y_start + i as f32 * step;
+    if visible_half_extent < CAMERA_SPAWN_DIST {
+        let x_start = ((cam_x - range) / step).floor() * step;
+        let y_start = ((cam_y - range) / step).floor() * step;
 
-        // vertical lines
-        gizmos.line_2d(
-            Vec2::new(x, cam_y - range),
-            Vec2::new(x, cam_y + range),
-            Color::srgba(1.0, 1.0, 1.0, 0.1),
-        );
+        for i in 0..((range * 2.0 / step) as i32) {
+            let x = x_start + i as f32 * step;
+            let y = y_start + i as f32 * step;
 
-        // horizontal lines
-        gizmos.line_2d(
-            Vec2::new(cam_x - range, y),
-            Vec2::new(cam_x + range, y),
-            Color::srgba(1.0, 1.0, 1.0, 0.1),
-        );
-    }
+            // vertical lines
+            gizmos.line_2d(
+                Vec2::new(x, cam_y - range),
+                Vec2::new(x, cam_y + range),
+                Color::srgba(1.0, 1.0, 1.0, 0.1),
+            );
+
+            // horizontal lines
+            gizmos.line_2d(
+                Vec2::new(cam_x - range, y),
+                Vec2::new(cam_x + range, y),
+                Color::srgba(1.0, 1.0, 1.0, 0.1),
+            );
+        }
+    };
 
     // draw origin
     gizmos.line_2d(
@@ -69,7 +84,6 @@ pub fn debug_grid(mut gizmos: Gizmos, camera: Query<&Transform, With<Camera2d>>)
 pub fn debug_room_bounds(
     mut gizmos: Gizmos,
     world_state: Res<WorldState>,
-    room_idx: Res<RoomIndex>,
 ) {
     for room in &world_state.rooms {
         let x = room.world_pos.x + room.room.size.x as f32 / 2.0; //gt.translation().x;// + room.width as f32 / 2.0 + room.offset_x;
@@ -103,7 +117,6 @@ pub fn regenerate_on_key(
 pub fn debug_door_collision(
     mut gizmos: Gizmos,
     world_state: Res<WorldState>,
-    mut commands: Commands,
 ) {
     for door in &world_state.open_doors {
         let (pos, size) = door.get_bounding_box();
@@ -111,11 +124,7 @@ pub fn debug_door_collision(
         gizmos.rect_2d(
             Isometry2d::new(pos, Rot2::default()),
             size,
-            if check_new_door_collision(door, &world_state) {
-                Color::srgba(0.2, 1.0, 0.2, 1.0)
-            } else {
-                Color::srgba(1.0, 0.2, 0.2, 1.0)
-            },
+            Color::srgba(0.2, 1.0, 0.2, 1.0),
         );
 
         gizmos.circle_2d(
