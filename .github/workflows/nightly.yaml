@@ -16,13 +16,13 @@ jobs:
         include:
           - os: ubuntu-latest
             name: linux
-            binary: TheAmazingDungeon
+            binary: bevy_ldtk_procgen
           - os: windows-latest
             name: windows
-            binary: TheAmazingDungeon.exe
+            binary: bevy_ldtk_procgen.exe
           - os: macos-latest
             name: macos
-            binary: TheAmazingDungeon
+            binary: bevy_ldtk_procgen
     steps:
       - uses: actions/checkout@v4
 
@@ -61,7 +61,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TheAmazingDungeon-${{ matrix.name }}-${{ github.sha }}
+          name: bevy_ldtk_procgen-${{ matrix.name }}-${{ github.sha }}
           path: |
             target/release/${{ matrix.binary }}
             assets/

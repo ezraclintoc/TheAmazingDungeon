@@ -1,4 +1,4 @@
-# TheAmazingDungeon - Spec & Benchmarks
+# bevy_ldtk_procgen - Spec & Benchmarks
 
 Human-readable spec of the generation algorithm, plus a running performance log.
 Updated by `/prep-commit` right before a commit, so each commit's version of this file

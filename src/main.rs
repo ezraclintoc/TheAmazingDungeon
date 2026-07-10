@@ -22,7 +22,7 @@ fn main() {
         )
         .add_plugins(PanCameraPlugin)
         .add_plugins(LdtkPlugin)
-        .add_plugins(WorldPlugin)
+        .add_plugins(WorldPlugin::default())
         .add_systems(Startup, setup)
         .insert_resource(LdtkSettings {
             level_spawn_behavior: LevelSpawnBehavior::UseWorldTranslation {

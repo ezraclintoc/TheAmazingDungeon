@@ -14,11 +14,18 @@ use rand::rngs::SmallRng;
 use self::pipeline::*;
 use self::types::*;
 use self::debug::*;
-pub struct WorldPlugin;
+pub struct WorldPlugin {
+    pub ldtk_path: String,
+}
+impl Default for WorldPlugin {
+    fn default() -> Self {
+        Self { ldtk_path: "rooms.ldtk".into() }
+    }
+}
 
-/// Reads DUNGEON_SEED from the environment for a reproducible session (e.g. to debug a
-/// specific reported layout); otherwise seeds from OS entropy so each run of the game
-/// gets genuinely varied generation.
+#[derive(Resource)]
+pub struct LdtkPath(String);
+
 fn make_gen_rng() -> SmallRng {
     match std::env::var("DUNGEON_SEED").ok().and_then(|s| s.parse::<u64>().ok()) {
         Some(seed) => {
@@ -38,6 +45,7 @@ impl Plugin for WorldPlugin {
             .init_resource::<SpawnQueue>()
             .insert_resource(GenRng(make_gen_rng()))
             .insert_resource(ClearColor(Color::srgb_u8(118, 59, 54)))
+            .insert_resource(LdtkPath(self.ldtk_path.clone()))
             .add_systems(Startup, setup_world)
             .add_systems(
                 Update,
@@ -58,8 +66,8 @@ impl Plugin for WorldPlugin {
 #[derive(Resource)]
 pub struct LdtkHandle(pub Handle<LdtkProject>);
 
-fn setup_world(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let handle: Handle<LdtkProject> = asset_server.load("rooms.ldtk");
+fn setup_world(mut commands: Commands, asset_server: Res<AssetServer>, ldtk_path: Res<LdtkPath>) {
+    let handle: Handle<LdtkProject> = asset_server.load(ldtk_path.0.clone());
     commands.insert_resource(LdtkHandle(handle.clone()));
 
     commands.spawn(LdtkWorldBundle {
