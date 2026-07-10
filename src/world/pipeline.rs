@@ -9,10 +9,8 @@ use std::str::FromStr;
 use super::types::*;
 use crate::world::LdtkHandle;
 
-const MAX_ROOMS: usize = 10000;
 const MAX_ROOMS_PER_FRAME: usize = 1000;
 const SPAWNS_PER_FRAME: usize = 5;
-pub const CAMERA_SPAWN_DIST: f32 = 10000.0;
 
 pub fn is_ldtk_loaded(
     asset_server: Res<AssetServer>,
@@ -143,6 +141,7 @@ pub fn spawn_if_idle(
     camera: Query<&GlobalTransform, With<Camera2d>>,
     room_idx: Res<RoomIndex>,
     mut gen_rng: ResMut<GenRng>,
+    config: Res<GenerationConfig>,
 ) {
     if task.0.is_some() {
         return;
@@ -162,8 +161,10 @@ pub fn spawn_if_idle(
 
     let mut rng = rand::rngs::SmallRng::seed_from_u64(gen_rng.0.random());
 
+    let config = *config;
+
     task.0 = Some(pool.spawn(async move {
-        generate_batch(&mut state, &room_idx, cam_pos, CAMERA_SPAWN_DIST, &mut rng)
+        generate_batch(&mut state, &room_idx, cam_pos, config.camera_spawn_dist, config.max_rooms, &mut rng)
     }));
 }
 
@@ -173,6 +174,7 @@ pub fn generate_batch(
     room_idx: &RoomIndex,
     cam_pos: Vec2,
     search_dist: f32,
+    max_rooms: usize,
     rng: &mut rand::rngs::SmallRng,
 ) -> Vec<Room> {
     let mut placed_rooms: Vec<Room> = Vec::new();
@@ -216,7 +218,7 @@ pub fn generate_batch(
                         continue;
                     }
 
-                    if state.rooms.len() + placed_rooms.len() >= MAX_ROOMS {
+                    if state.rooms.len() + placed_rooms.len() >= max_rooms {
                         break;
                     }
 

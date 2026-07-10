@@ -37,8 +37,8 @@ widths, weight, room type), then builds the `by_door_dir` index. Doesn't touch B
 
 ### Batch generation - `generate_batch` (`pipeline.rs`)
 
-Given the current `WorldState`, a `RoomIndex`, a camera position, a search radius, and
-an RNG:
+Given the current `WorldState`, a `RoomIndex`, a camera position, a search radius, a
+session-wide room cap, and an RNG:
 
 1. If no rooms exist yet, pick a random `Spawn`-type room and place it at the origin.
 2. Otherwise, repeat in passes: find open doors within `search_dist` of the camera, sort
@@ -47,8 +47,13 @@ an RNG:
    `try_place_room` until one succeeds. Each pass re-scans `open_doors`, so rooms newly
    opened by one pass get picked up by the next - letting a single branch chain multiple
    rooms deep within one async batch instead of growing by only one ring of doors per
-   frame. Passes stop once `MAX_ROOMS_PER_FRAME` rooms have been placed this batch, or a
-   pass places zero new rooms (no further progress possible right now).
+   frame. Passes stop once `MAX_ROOMS_PER_FRAME` rooms have been placed this batch, the
+   session-wide room cap is hit, or a pass places zero new rooms (no further progress
+   possible right now).
+
+The search radius and room cap are now configurable via `WorldPlugin` (`camera_spawn_dist`/
+`max_rooms`, threaded through a `GenerationConfig` resource) rather than fixed consts -
+pure plumbing, not a behavior change (the defaults are unchanged).
 
 Placements within a batch mutate a local `WorldState` copy immediately, so later doors in
 the same batch (including later passes) see earlier placements.
@@ -119,23 +124,26 @@ digging into before trusting the "reaches 1000 rooms" claim at face value.
 
 ## Current Performance
 
-As of the working tree on top of commit `105aa0a` (2026-07-10, uncommitted - adds
-multi-pass branch chaining to `generate_batch` and a `SpawnQueue` frame-rate limiter to
-`poll_task`; see "Batch generation" above):
+As of commit `9ff4604` (2026-07-10) - lib/examples restructure, `GenerationConfig`
+(camera_spawn_dist/max_rooms now configurable via `WorldPlugin`), and a substantial
+`assets/rooms.ldtk` content change (~10% more entities in the room catalog per a rough
+count) all landed in the same commit:
 
-- **100 rooms**: avg 34.12 us/room (34/50 seeds reached target)
-- **250 rooms**: avg 35.13 us/room (23/50 seeds reached target)
-- **500 rooms**: avg 37.54 us/room (15/50 seeds reached target)
-- **1000 rooms**: avg 39.46 us/room (6/50 seeds reached target)
+- **100 rooms**: avg 45.96 us/room (41/50 seeds reached target)
+- **250 rooms**: avg 46.51 us/room (37/50 seeds reached target)
+- **500 rooms**: avg 47.73 us/room (32/50 seeds reached target)
+- **1000 rooms**: avg 49.74 us/room (24/50 seeds reached target)
 
-Per-room cost climbs only ~1.16x as the target grows 10x (100 -> 1000 rooms), flatter
-still than the already-flattened ~1.67x from spatial hashing alone - plausibly because
-chaining multiple rooms per batch cuts down on repeated per-batch overhead (re-scanning
-and re-sorting `open_doors` once per task instead of once per single-room placement).
-Seed-reachability at 1000 rooms also recovered somewhat (6/50, up from 1/50) but is still
-well short of the pre-spatial-hash baseline's 22/50 - the suspected bridging-validation
-regression from "Known complexity characteristic" above hasn't been root-caused or fixed
-yet, so treat this as partial, unexplained improvement, not confirmation it's resolved.
+Per-room cost climbs only ~1.08x as the target grows 10x (100 -> 1000 rooms) - flatter
+still, though the code changes here (lib restructure, config plumbing) don't touch the
+placement algorithm's cost model, so this movement is most plausibly noise plus whatever
+the larger room catalog changed about candidate availability, not a new optimization.
+Seed-reachability jumped a lot across every target (e.g. 1000 rooms: 24/50, vs 6/50 last
+run) - **can't be attributed to this commit's code changes** (none of them touch
+`try_place_room`'s validation/bridging logic), so the leading suspect is the larger
+`assets/rooms.ldtk` catalog giving `try_place_room`/bridging more candidate rooms to
+succeed with. Worth confirming next run once the asset change and code change aren't
+bundled together - right now they can't be told apart.
 
 ## Benchmark History
 
@@ -152,6 +160,7 @@ target this run, which is itself meaningful (worth a Notes callout, not silently
 | 2026-07-08 | `12443ae`     | 38.37 (41/50) | 68.46 (39/50) | 118.93 (35/50) | 236.18 (22/50) | Baseline before spatial hashing. Numbers refreshed on a second run of the same pending (uncommitted) working tree - small movement vs. the first measurement is normal seed noise, not a code change.                                                                                                                                                                                                                                                                                                              |
 | 2026-07-08 | `105aa0a`     | 33.13 (30/50) | 38.73 (18/50) | 44.87 (7/50)   | 55.31 (1/50)   | First post-spatial-hashing measurement (feature/spatial-hashing rebased onto main). Per-room cost flattened a lot (see Current Performance), but seed-reachability at higher targets dropped sharply - suspected bridging-validation bug (pretend.add_room now runs open-door bookkeeping it didn't before), not a speed regression. Needs follow-up before trusting the 1000-room number.                                                                                                                         |
 | 2026-07-10 | `105aa0a`+wip | 34.12 (34/50) | 35.13 (23/50) | 37.54 (15/50)  | 39.46 (6/50)   | Uncommitted working tree on top of 105aa0a - adds multi-pass branch chaining to generate_batch (chains a branch multiple rooms deep per async batch) and a SpawnQueue frame-rate limiter to poll_task; numbers reflect the working tree, not a specific commit. Per-room cost climb flattened further (~1.16x vs ~1.67x), and 1000-room seed-reachability partially recovered (6/50 vs 1/50) but is still well short of the pre-spatial-hash 22/50 - the suspected bridging-validation regression remains unfixed. |
+| 2026-07-10 | `9ff4604`     | 45.96 (41/50) | 46.51 (37/50) | 47.73 (32/50)  | 49.74 (24/50)  | lib/examples restructure plus GenerationConfig (camera_spawn_dist/max_rooms configurable, no algorithm change) bundled with a substantial assets/rooms.ldtk content change (~10% more entities). Seed-reachability jumped a lot at every target; since none of this commit's code changes touch try_place_room/bridging, the larger room catalog is the leading suspect, not the code - not yet isolated from the asset change to confirm.                                                                         |
 
 ### Performance Chart
 
@@ -167,10 +176,10 @@ longer depends much on room count" looks like.
 ```mermaid
 xychart-beta
     title "Avg cost by commit (us/room) - top to bottom: 1000, 500, 250, 100 rooms"
-    x-axis ["12443ae", "105aa0a", "105aa0a+wip"]
+    x-axis ["12443ae", "105aa0a", "105aa0a+wip", "9ff4604"]
     y-axis "us/room" 0 --> 300
-    line [236.18, 55.31, 39.46]
-    line [118.93, 44.87, 37.54]
-    line [68.46, 38.73, 35.13]
-    line [38.37, 33.13, 34.12]
+    line [236.18, 55.31, 39.46, 49.74]
+    line [118.93, 44.87, 37.54, 47.73]
+    line [68.46, 38.73, 35.13, 46.51]
+    line [38.37, 33.13, 34.12, 45.96]
 ```

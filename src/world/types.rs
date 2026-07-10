@@ -64,15 +64,22 @@ impl Room {
 #[derive(Resource, Default)]
 pub struct GenTask(pub Option<Task<Vec<Room>>>);
 
-/// Rooms folded into `WorldState` but not yet spawned as `LdtkWorldBundle`s - `poll_task`
-/// drains a few per frame instead of all at once, so a big batch doesn't spike frame time.
+/// Generation knobs configurable via `WorldPlugin`; other tuning consts stay internal.
+#[derive(Resource, Clone, Copy)]
+pub struct GenerationConfig {
+    pub camera_spawn_dist: f32,
+    pub max_rooms: usize,
+}
+
+impl Default for GenerationConfig {
+    fn default() -> Self {
+        Self { camera_spawn_dist: 10000.0, max_rooms: 10000 }
+    }
+}
+
 #[derive(Resource, Default)]
 pub struct SpawnQueue(pub VecDeque<Room>);
 
-/// The single RNG threaded through the whole generation session. `spawn_if_idle` draws
-/// one seed from this per batch instead of reseeding a constant every batch (the cause
-/// of the "repeating patterns" bug - see docs/report.md), so consecutive batches get
-/// different candidate shuffles while the whole session stays reproducible from one seed.
 #[derive(Resource)]
 pub struct GenRng(pub SmallRng);
 

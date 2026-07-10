@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 
-use super::pipeline::*;
 use super::types::*;
 
 pub fn debug_open_doors(mut gizmos: Gizmos, world_state: Res<WorldState>) {
@@ -18,6 +17,7 @@ pub fn debug_grid(
     mut gizmos: Gizmos,
     camera: Query<&Transform, With<Camera2d>>,
     windows: Query<&Window>,
+    config: Res<GenerationConfig>,
 ) {
     let Ok(cam) = camera.single() else {
         return;
@@ -29,7 +29,7 @@ pub fn debug_grid(
     let cam_x = cam.translation.x;
     let cam_y = cam.translation.y;
 
-    let range = CAMERA_SPAWN_DIST * 1.75;
+    let range = config.camera_spawn_dist * 1.75;
     let step = 16.0;
 
     // PanCamera zooms by scaling the camera's transform (smaller scale = zoomed in
@@ -38,7 +38,7 @@ pub fn debug_grid(
     // zoomed in far enough that the CAMERA_SPAWN_DIST circle no longer fits on screen.
     let visible_half_extent = window.width().min(window.height()) / 2.0 * cam.scale.z;
 
-    if visible_half_extent < CAMERA_SPAWN_DIST {
+    if visible_half_extent < config.camera_spawn_dist {
         let x_start = ((cam_x - range) / step).floor() * step;
         let y_start = ((cam_y - range) / step).floor() * step;
 
@@ -76,7 +76,7 @@ pub fn debug_grid(
 
     gizmos.circle_2d(
         Isometry2d::new(cam.translation.truncate(), Rot2::default()),
-        CAMERA_SPAWN_DIST,
+        config.camera_spawn_dist,
         Color::srgba(1.0, 1.0, 1.0, 0.1),
     );
 }

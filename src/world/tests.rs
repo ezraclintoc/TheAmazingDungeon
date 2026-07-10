@@ -2,8 +2,8 @@
 //! Bevy `App`/`AssetServer`: `LdtkJson` parses straight from the file via `serde_json`
 //! and implements `RawLevelAccessor` on its own.
 
-use super::pipeline::{build_room_index, generate_batch, CAMERA_SPAWN_DIST};
-use super::types::{rects_collide, rects_collide_tl, Door, RoomIndex, WorldState};
+use super::pipeline::{build_room_index, generate_batch};
+use super::types::{rects_collide, rects_collide_tl, Door, GenerationConfig, RoomIndex, WorldState};
 use bevy::prelude::Vec2;
 use bevy_ecs_ldtk::ldtk::LdtkJson;
 use bevy_ecs_ldtk::prelude::RawLevelAccessor;
@@ -45,10 +45,11 @@ fn drive_generation(room_idx: &RoomIndex) -> WorldState {
     let mut state = WorldState::default();
     let mut rng = SmallRng::seed_from_u64(42);
     let mut cam_pos = Vec2::ZERO;
+    let config = GenerationConfig::default();
 
     for _ in 0..MAX_BATCHES {
         let mut batch_state = state.clone();
-        let placed = generate_batch(&mut batch_state, room_idx, cam_pos, CAMERA_SPAWN_DIST, &mut rng);
+        let placed = generate_batch(&mut batch_state, room_idx, cam_pos, config.camera_spawn_dist, config.max_rooms, &mut rng);
         if placed.is_empty() {
             break;
         }
@@ -110,6 +111,7 @@ fn generation_speed_by_target() {
 
     let room_idx = load_room_index();
     let mut any_target_reached = false;
+    let config = GenerationConfig::default();
 
     for &target in &TARGETS {
         let mut time_per_room_samples: Vec<f64> = Vec::new();
@@ -125,7 +127,7 @@ fn generation_speed_by_target() {
                     break;
                 }
                 let mut batch_state = state.clone();
-                let placed = generate_batch(&mut batch_state, &room_idx, cam_pos, CAMERA_SPAWN_DIST, &mut rng);
+                let placed = generate_batch(&mut batch_state, &room_idx, cam_pos, config.camera_spawn_dist, config.max_rooms, &mut rng);
                 if placed.is_empty() {
                     break;
                 }
@@ -245,10 +247,11 @@ fn nearby_open_doors_get_filled_within_a_few_batches() {
     let mut state = WorldState::default();
     let mut rng = SmallRng::seed_from_u64(42);
     let cam_pos = Vec2::ZERO;
+    let config = GenerationConfig::default();
 
     for _ in 0..FEW_BATCHES {
         let mut batch_state = state.clone();
-        let placed = generate_batch(&mut batch_state, &room_idx, cam_pos, CAMERA_SPAWN_DIST, &mut rng);
+        let placed = generate_batch(&mut batch_state, &room_idx, cam_pos, config.camera_spawn_dist, config.max_rooms, &mut rng);
         if placed.is_empty() {
             break;
         }
@@ -258,7 +261,7 @@ fn nearby_open_doors_get_filled_within_a_few_batches() {
     let stuck_doors: Vec<Vec2> = state
         .open_doors
         .iter()
-        .filter(|d| d.world_pos.distance(cam_pos) <= CAMERA_SPAWN_DIST)
+        .filter(|d| d.world_pos.distance(cam_pos) <= config.camera_spawn_dist)
         .map(|d| d.world_pos)
         .collect();
 
@@ -266,7 +269,7 @@ fn nearby_open_doors_get_filled_within_a_few_batches() {
         stuck_doors.is_empty(),
         "{} open door(s) within CAMERA_SPAWN_DIST ({}) of the camera are still unfilled after {} batches: {:?}",
         stuck_doors.len(),
-        CAMERA_SPAWN_DIST,
+        config.camera_spawn_dist,
         FEW_BATCHES,
         stuck_doors,
     );

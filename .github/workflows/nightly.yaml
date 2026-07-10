@@ -16,13 +16,13 @@ jobs:
         include:
           - os: ubuntu-latest
             name: linux
-            binary: bevy_ldtk_procgen
+            binary: dungeon
           - os: windows-latest
             name: windows
-            binary: bevy_ldtk_procgen.exe
+            binary: dungeon.exe
           - os: macos-latest
             name: macos
-            binary: bevy_ldtk_procgen
+            binary: dungeon
     steps:
       - uses: actions/checkout@v4
 
@@ -56,12 +56,12 @@ jobs:
         with:
           timeout_minutes: 30
           max_attempts: 3
-          command: cargo build --release
+          command: cargo build --release --example dungeon
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bevy_ldtk_procgen-${{ matrix.name }}-${{ github.sha }}
           path: |
-            target/release/${{ matrix.binary }}
+            target/release/examples/${{ matrix.binary }}
             assets/

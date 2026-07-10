@@ -1,13 +1,15 @@
 # bevy_ldtk_procgen
 
-[![Nightly Build](https://github.com/ezraclintoc/TheAmazingDungeon/actions/workflows/nightly.yaml/badge.svg)](https://github.com/ezraclintoc/TheAmazingDungeon/actions/workflows/nightly.yaml)
+[![Nightly Build](https://github.com/ezraclintoc/bevy_ldtk_procgen/actions/workflows/nightly.yaml/badge.svg)](https://github.com/ezraclintoc/bevy_ldtk_procgen/actions/workflows/nightly.yaml)
 
 A procedural, room-by-room level generator for Bevy and LDtk (`bevy_ecs_ldtk`). Author a
 catalog of rooms as LDtk levels, mark their doors, and this plugin randomly connects
 them into a non-linear layout at runtime - no hand-authored dungeon required.
 
-Not published as a crate yet - this repo is currently both the plugin's source and a
-runnable demo game (`cargo run`) built on top of it. See "Library vs. demo" below.
+Not published to crates.io yet, but the crate itself is a real library - add
+`bevy_ldtk_procgen::WorldPlugin` (or `use bevy_ldtk_procgen::prelude::*;`) to your own
+Bevy app via a git dependency, or clone this repo and run the bundled demo. See
+"Library vs. demo" below.
 
 ## Features
 
@@ -17,7 +19,7 @@ runnable demo game (`cargo run`) built on top of it. See "Library vs. demo" belo
 
 - Spatial Hashing: room-vs-room and room-vs-door collision checks are grid-backed, so placement cost stays close to flat as the dungeon grows instead of degrading with total room count.
 
-- Frame-Rate-Limited Spawning: newly generated rooms are drained into the world a few at a time per frame, so a big batch of new rooms doesn't spike frame time.
+- Frame-Rate-Limited Spawning: newly generated rooms are drained into the world a few at a time per frame, so a big batch of new rooms doesn't spike frame time. This can make generation *look* slower than it is - a batch is usually fully placed in the background well before every room in it has visibly appeared. Enable debug mode (see Controls) to see this directly: room-bounds gizmos read placement data straight from `WorldState`, so they appear immediately for rooms that haven't visually spawned yet.
 
 - Easy LDtk Content Creation: designing and adding new room templates happens entirely inside the LDtk editor - no code changes needed to add a room.
 
@@ -29,19 +31,15 @@ runnable demo game (`cargo run`) built on top of it. See "Library vs. demo" belo
 
 ## Getting Started
 
-Ensure you're on the latest stable Rust toolchain, clone the repository, and run:
+Ensure you're on the latest stable Rust toolchain, clone the repository, and run the
+bundled demo:
 
 ```bash
-cargo run --release
+cargo run --example dungeon --release
 ```
 
-This project uses Bevy system dependencies (udev, alsa, vulkan, wayland, X11) that
-aren't always present on a bare host - if `cargo run` fails to find them, this repo is
-Nix-managed (`shell.nix` + `.envrc`); run `nix-shell` first, or let direnv pick it up
-automatically.
-
 > Note: Nightly binaries are also automatically built and available for download under
-> the GitHub Releases tab for testing the bleeding edge.
+> the GitHub Actions tab if you want to try an executable demo.
 
 ## Bring your own LDtk file
 
@@ -81,21 +79,38 @@ mismatch will silently misplace or fail to connect rooms rather than error clear
 
 - R — Refresh / Regenerate a completely new map layout instantly.
 
+Debug overlays are off by default. Enable them with:
+
+```bash
+cargo run --example dungeon --release -- --debug
+```
+
+The `--` before `--debug` (or `-d`) is required - without it, cargo tries to parse
+`--debug` as its own argument instead of forwarding it to the game. With it on, you
+should see: small green circles at every open door, translucent green room-bounds
+rectangles, green door-clearance boxes, and a faint white grid centered on the camera
+once zoomed in - if none of that appears, the flag isn't reaching the binary (check for
+the missing `--` first).
+
 ## Library vs. demo
 
-This repo currently builds as a single executable (`src/main.rs`), not a library - it
-can't yet be added as a Cargo dependency by another project. Turning it into a proper
-plugin crate (a `src/lib.rs` exposing `WorldPlugin` and friends, with this repo's game
-becoming an example under `examples/`) is planned but not done - see Future Improvements.
-Until then, using this means cloning the repo and swapping in your own `.ldtk` file as
-described above, not `cargo add`-ing it.
+This repo builds as a library (`src/lib.rs`), not a single-executable game - the
+generator itself is what's published, and the game you get with `cargo run --example
+dungeon` is just the demo built on top of it. The public API is intentionally small:
+`WorldPlugin` (add it to your `App`, pointed at your own `.ldtk` file) and, for reading
+back what got generated, `WorldState`/`Room`/`Door`/`RoomDef`/`DoorDef`/`Dir`/
+`RoomType`/`GenerationState` - available directly (`bevy_ldtk_procgen::WorldPlugin`) or
+via `use bevy_ldtk_procgen::prelude::*;`. Everything else (the placement algorithm,
+spatial hashing, async batching internals) is a private implementation detail, not part
+of the API - you don't call it directly, you just add `WorldPlugin` and read
+`WorldState` back.
+
+Not yet published to crates.io, so today "using this" still means a git dependency or
+cloning the repo rather than `cargo add bevy_ldtk_procgen` - see Future Improvements.
 
 ## License
 
-No license file is currently present in this repository, so default copyright applies -
-others can't legally reuse this code yet even though it's public. Adding an explicit
-license (e.g. dual MIT/Apache-2.0, the Rust ecosystem norm) is a prerequisite for this
-being usable as a template by anyone else.
+Dual-licensed under either [MIT](LICENSE-MIT) or [Apache License, Version 2.0](LICENSE-APACHE), at your option - the standard convention for Rust crates.
 
 ## Asset Credits
 
@@ -109,17 +124,13 @@ being usable as a template by anyone else.
 
 ### Known Bugs
 
-- Repeating Patterns: Generated dungeons show visibly repetitive layouts - similar sequences of hallways/rooms recur in a noticeable pattern instead of feeling varied between playthroughs.
-
 - Regenerate Hitch: Pressing R to regenerate freezes for a moment, longer the more rooms are currently placed. `regenerate_on_key` recursively despawns every placed room's entity tree (tiles, colliders, LDtk sub-entities) in a single frame with no throttling - the same class of cost the spawn side already got rate-limited for, but never applied to teardown.
 
 ## Future Improvements
 
 While the core generation layout logic is running, here are the planned roadmap items to optimize and expand the system:
 
-- Convert to a library crate: expose `src/world/` as `src/lib.rs`'s public API and move the current game into `examples/`, so this can be used as a Cargo dependency instead of a clone-and-edit template.
-
-- Add a license file.
+- Publish to crates.io, so this can be used with `cargo add` instead of a git dependency.
 
 - Configurable tile size: LDtk grid/tile size is currently hardcoded to 16px throughout the placement math.
 
