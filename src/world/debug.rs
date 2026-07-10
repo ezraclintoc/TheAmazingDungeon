@@ -103,6 +103,7 @@ pub fn regenerate_on_key(
     keys: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     mut world_state: ResMut<WorldState>,
+    mut spawn_queue: ResMut<SpawnQueue>,
     worlds: Query<Entity, With<LevelSet>>,
 ) {
     if keys.just_pressed(KeyCode::KeyR) {
@@ -111,6 +112,8 @@ pub fn regenerate_on_key(
         }
         // full reset, not per-field .clear() - room_grid must reset with rooms
         *world_state = WorldState::default();
+        // also clear queued-but-unspawned rooms, or they'd spawn into the fresh world
+        spawn_queue.0.clear();
     }
 }
 

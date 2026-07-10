@@ -20,8 +20,11 @@ door facing). Generation then runs in `Ready`.
 Generation itself is async, not per-frame synchronous placement: `spawn_if_idle` runs
 only when idle, clones the current `WorldState` plus a draw from the session RNG, and
 spawns a batch on `AsyncComputeTaskPool`. `poll_task` polls it each frame; on completion
-it spawns each placed room as its own `LdtkWorldBundle` and folds the result back into
-the real `WorldState` (open-door bookkeeping: matched doors removed, new doors added).
+it immediately folds every placed room into the real `WorldState` (open-door bookkeeping:
+matched doors removed, new doors added) so the next batch's collision checks see accurate
+state right away, then queues each room's `LdtkWorldBundle` spawn in a `SpawnQueue`
+drained at a capped rate (a few per frame) rather than all at once, so a large batch
+doesn't spike frame time when `bevy_ecs_ldtk` populates a level's tiles.
 
 ## Algorithms
 
@@ -38,13 +41,17 @@ Given the current `WorldState`, a `RoomIndex`, a camera position, a search radiu
 an RNG:
 
 1. If no rooms exist yet, pick a random `Spawn`-type room and place it at the origin.
-2. Otherwise, find open doors within `search_dist` of the camera, sort by distance, and
-   for each one: build a weighted candidate list of rooms with a door facing the
-   opposite direction, shuffle it, and try each candidate in turn via `try_place_room`
-   until one succeeds.
+2. Otherwise, repeat in passes: find open doors within `search_dist` of the camera, sort
+   by distance, and for each one build a weighted candidate list of rooms with a door
+   facing the opposite direction, shuffle it, and try each candidate in turn via
+   `try_place_room` until one succeeds. Each pass re-scans `open_doors`, so rooms newly
+   opened by one pass get picked up by the next - letting a single branch chain multiple
+   rooms deep within one async batch instead of growing by only one ring of doors per
+   frame. Passes stop once `MAX_ROOMS_PER_FRAME` rooms have been placed this batch, or a
+   pass places zero new rooms (no further progress possible right now).
 
 Placements within a batch mutate a local `WorldState` copy immediately, so later doors in
-the same batch see earlier placements.
+the same batch (including later passes) see earlier placements.
 
 ### Spatial indexing - `SpatialHash` (`spatial_hash.rs`)
 
@@ -112,19 +119,23 @@ digging into before trusting the "reaches 1000 rooms" claim at face value.
 
 ## Current Performance
 
-As of merging `feature/spatial-hashing` into `main` (2026-07-08, merge commit not yet
-created - this reflects the staged merge on top of `main`'s `b233949`):
+As of the working tree on top of commit `105aa0a` (2026-07-10, uncommitted - adds
+multi-pass branch chaining to `generate_batch` and a `SpawnQueue` frame-rate limiter to
+`poll_task`; see "Batch generation" above):
 
-- **100 rooms**: avg 33.13 us/room (30/50 seeds reached target)
-- **250 rooms**: avg 38.73 us/room (18/50 seeds reached target)
-- **500 rooms**: avg 44.87 us/room (7/50 seeds reached target)
-- **1000 rooms**: avg 55.31 us/room (1/50 seeds reached target)
+- **100 rooms**: avg 34.12 us/room (34/50 seeds reached target)
+- **250 rooms**: avg 35.13 us/room (23/50 seeds reached target)
+- **500 rooms**: avg 37.54 us/room (15/50 seeds reached target)
+- **1000 rooms**: avg 39.46 us/room (6/50 seeds reached target)
 
-Per-room cost climbs only ~1.67x as the target grows 10x (100 -> 1000 rooms), down from
-~6.2x before spatial hashing - the flattening the grid was built to deliver. But
-seed-reachability at higher targets dropped sharply (see "Known complexity
-characteristic" above) - likely a real bug in bridging validation, not a speed issue,
-and worth fixing before leaning on the 1000-room number.
+Per-room cost climbs only ~1.16x as the target grows 10x (100 -> 1000 rooms), flatter
+still than the already-flattened ~1.67x from spatial hashing alone - plausibly because
+chaining multiple rooms per batch cuts down on repeated per-batch overhead (re-scanning
+and re-sorting `open_doors` once per task instead of once per single-room placement).
+Seed-reachability at 1000 rooms also recovered somewhat (6/50, up from 1/50) but is still
+well short of the pre-spatial-hash baseline's 22/50 - the suspected bridging-validation
+regression from "Known complexity characteristic" above hasn't been root-caused or fixed
+yet, so treat this as partial, unexplained improvement, not confirmation it's resolved.
 
 ## Benchmark History
 
@@ -136,10 +147,11 @@ excluded rather than averaged in, so that unrelated bug can't masquerade as a sp
 change). Cells are `avg us/room (seeds reached/50)`; `N/A` means zero seeds reached that
 target this run, which is itself meaningful (worth a Notes callout, not silently dropped).
 
-| Date       | Commit                      | 100 rooms     | 250 rooms     | 500 rooms      | 1000 rooms     | Notes                                                                                                                                                                                                                                                                                                                                                                                                          |
-|------------|-----------------------------|---------------|---------------|----------------|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 2026-07-08 | `12443ae`                   | 38.37 (41/50) | 68.46 (39/50) | 118.93 (35/50) | 236.18 (22/50) | Baseline before spatial hashing. Numbers refreshed on a second run of the same pending (uncommitted) working tree - small movement vs. the first measurement is normal seed noise, not a code change.                                                                                                                                                                                                          |
-| 2026-07-08 | `b233949`+`b25bad2` (merge) | 33.13 (30/50) | 38.73 (18/50) | 44.87 (7/50)   | 55.31 (1/50)   | First post-spatial-hashing measurement (merge of feature/spatial-hashing into main, not yet committed). Per-room cost flattened a lot (see Current Performance), but seed-reachability at higher targets dropped sharply - suspected bridging-validation bug (pretend.add_room now runs open-door bookkeeping it didn't before), not a speed regression. Needs follow-up before trusting the 1000-room number. |
+| Date       | Commit        | 100 rooms     | 250 rooms     | 500 rooms      | 1000 rooms     | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|------------|---------------|---------------|---------------|----------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 2026-07-08 | `12443ae`     | 38.37 (41/50) | 68.46 (39/50) | 118.93 (35/50) | 236.18 (22/50) | Baseline before spatial hashing. Numbers refreshed on a second run of the same pending (uncommitted) working tree - small movement vs. the first measurement is normal seed noise, not a code change.                                                                                                                                                                                                                                                                                                              |
+| 2026-07-08 | `105aa0a`     | 33.13 (30/50) | 38.73 (18/50) | 44.87 (7/50)   | 55.31 (1/50)   | First post-spatial-hashing measurement (feature/spatial-hashing rebased onto main). Per-room cost flattened a lot (see Current Performance), but seed-reachability at higher targets dropped sharply - suspected bridging-validation bug (pretend.add_room now runs open-door bookkeeping it didn't before), not a speed regression. Needs follow-up before trusting the 1000-room number.                                                                                                                         |
+| 2026-07-10 | `105aa0a`+wip | 34.12 (34/50) | 35.13 (23/50) | 37.54 (15/50)  | 39.46 (6/50)   | Uncommitted working tree on top of 105aa0a - adds multi-pass branch chaining to generate_batch (chains a branch multiple rooms deep per async batch) and a SpawnQueue frame-rate limiter to poll_task; numbers reflect the working tree, not a specific commit. Per-room cost climb flattened further (~1.16x vs ~1.67x), and 1000-room seed-reachability partially recovered (6/50 vs 1/50) but is still well short of the pre-spatial-hash 22/50 - the suspected bridging-validation regression remains unfixed. |
 
 ### Performance Chart
 
@@ -155,10 +167,10 @@ longer depends much on room count" looks like.
 ```mermaid
 xychart-beta
     title "Avg cost by commit (us/room) - top to bottom: 1000, 500, 250, 100 rooms"
-    x-axis ["12443ae"]
+    x-axis ["12443ae", "105aa0a", "105aa0a+wip"]
     y-axis "us/room" 0 --> 300
-    line [236.18]
-    line [118.93]
-    line [68.46]
-    line [38.37]
+    line [236.18, 55.31, 39.46]
+    line [118.93, 44.87, 37.54]
+    line [68.46, 38.73, 35.13]
+    line [38.37, 33.13, 34.12]
 ```

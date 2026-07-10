@@ -35,6 +35,7 @@ impl Plugin for WorldPlugin {
             .init_resource::<RoomIndex>()
             .init_resource::<WorldState>()
             .init_resource::<GenTask>()
+            .init_resource::<SpawnQueue>()
             .insert_resource(GenRng(make_gen_rng()))
             .insert_resource(ClearColor(Color::srgb_u8(118, 59, 54)))
             .add_systems(Startup, setup_world)
