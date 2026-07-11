@@ -4,6 +4,7 @@ use bevy::tasks::Task;
 use rand::rngs::SmallRng;
 use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
+use std::time::Duration;
 
 //TODO: derive cell size from ldtk level
 const DEFAULT_CELL_SIZE: f32 = 128.0;
@@ -69,16 +70,47 @@ pub struct GenTask(pub Option<Task<Vec<Room>>>);
 pub struct GenerationConfig {
     pub camera_spawn_dist: f32,
     pub max_rooms: usize,
+    pub cull_dist: f32,
 }
 
 impl Default for GenerationConfig {
     fn default() -> Self {
-        Self { camera_spawn_dist: 10000.0, max_rooms: 10000 }
+        Self { camera_spawn_dist: 1000.0, max_rooms: 10000, cull_dist: 500.0 }
     }
 }
 
+/// Rooms queued to spawn (or respawn) as an entity, tagged with their index into
+/// `WorldState.rooms` so the spawned entity can be marked with `SpawnedRoom`.
 #[derive(Resource, Default)]
-pub struct SpawnQueue(pub VecDeque<Room>);
+pub struct SpawnQueue(pub VecDeque<(usize, Room)>);
+
+/// Marks a spawned `LdtkWorldBundle` entity with its index into `WorldState.rooms`,
+/// so culling can find which entity corresponds to which placed room.
+#[derive(Component)]
+pub struct SpawnedRoom(pub usize);
+
+/// Entities queued for despawn by culling, drained a few per frame like `SpawnQueue`.
+#[derive(Resource, Default)]
+pub struct DespawnQueue(pub VecDeque<Entity>);
+
+/// Gates how often culling checks room-vs-camera distance - every frame buys nothing
+/// since the camera barely moves between frames.
+#[derive(Resource)]
+pub struct CullTimer(pub Timer);
+
+impl Default for CullTimer {
+    fn default() -> Self {
+        Self(Timer::new(Duration::from_millis(500), TimerMode::Repeating))
+    }
+}
+
+/// Runtime-toggleable debug overlays. `WorldPlugin::debug` sets both initial values;
+/// toggle at runtime by mutating this resource (e.g. from a key-press system).
+#[derive(Resource, Clone, Copy)]
+pub struct DebugToggles {
+    pub gizmos: bool,
+    pub grid: bool,
+}
 
 #[derive(Resource)]
 pub struct GenRng(pub SmallRng);
@@ -140,7 +172,9 @@ impl Default for WorldState {
 }
 
 impl WorldState {
-    pub fn add_room(&mut self, room: Room) {
+    /// Pushes `room`, does open-door bookkeeping, inserts into the grid, and returns
+    /// the index it was placed at (for callers that need to tag a spawned entity with it).
+    pub fn add_room(&mut self, room: Room) -> usize {
         let index = self.rooms.len();
         let world_pos = room.world_pos;
         let size = room.room.size.as_vec2();
@@ -158,6 +192,7 @@ impl WorldState {
             }
         }
         self.room_grid.insert(index, world_pos, size);
+        index
     }
 }
 

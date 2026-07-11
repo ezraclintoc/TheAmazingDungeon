@@ -35,10 +35,10 @@ pub fn debug_grid(
     // PanCamera zooms by scaling the camera's transform (smaller scale = zoomed in
     // more; see bevy_camera_controller::pan_camera), so the visible viewport in world
     // units is the window size scaled by that factor. Only draw the grid once we're
-    // zoomed in far enough that the CAMERA_SPAWN_DIST circle no longer fits on screen.
+    // zoomed in far enough that the cull_dist circle no longer fits on screen.
     let visible_half_extent = window.width().min(window.height()) / 2.0 * cam.scale.z;
 
-    if visible_half_extent < config.camera_spawn_dist {
+    if visible_half_extent < config.cull_dist {
         let x_start = ((cam_x - range) / step).floor() * step;
         let y_start = ((cam_y - range) / step).floor() * step;
 
@@ -79,6 +79,12 @@ pub fn debug_grid(
         config.camera_spawn_dist,
         Color::srgba(1.0, 1.0, 1.0, 0.1),
     );
+
+    gizmos.circle_2d(
+        Isometry2d::new(cam.translation.truncate(), Rot2::default()),
+        config.cull_dist,
+        Color::srgba(1.0, 0.3, 0.0, 0.3),
+    );
 }
 
 pub fn debug_room_bounds(
@@ -104,6 +110,7 @@ pub fn regenerate_on_key(
     mut commands: Commands,
     mut world_state: ResMut<WorldState>,
     mut spawn_queue: ResMut<SpawnQueue>,
+    mut despawn_queue: ResMut<DespawnQueue>,
     worlds: Query<Entity, With<LevelSet>>,
 ) {
     if keys.just_pressed(KeyCode::KeyR) {
@@ -112,8 +119,9 @@ pub fn regenerate_on_key(
         }
         // full reset, not per-field .clear() - room_grid must reset with rooms
         *world_state = WorldState::default();
-        // also clear queued-but-unspawned rooms, or they'd spawn into the fresh world
+        // also clear queued-but-unspawned/undespawned entities, stale after a full reset
         spawn_queue.0.clear();
+        despawn_queue.0.clear();
     }
 }
 

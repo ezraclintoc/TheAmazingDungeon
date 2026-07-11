@@ -11,6 +11,7 @@ use crate::world::LdtkHandle;
 
 const MAX_ROOMS_PER_FRAME: usize = 1000;
 const SPAWNS_PER_FRAME: usize = 5;
+const DESPAWNS_PER_FRAME: usize = 5;
 
 pub fn is_ldtk_loaded(
     asset_server: Res<AssetServer>,
@@ -294,36 +295,56 @@ pub fn poll_task(
     mut task: ResMut<GenTask>,
     mut state: ResMut<WorldState>,
     mut spawn_queue: ResMut<SpawnQueue>,
+    mut despawn_queue: ResMut<DespawnQueue>,
     mut commands: Commands,
     ldtk_handle: Res<LdtkHandle>,
+    camera: Query<&GlobalTransform, With<Camera2d>>,
+    config: Res<GenerationConfig>,
     mut batch: Local<usize>,
 ) {
     if let Some(t) = &mut task.0 {
         if let Some(new_rooms) = block_on(poll_once(t)) {
             *batch += 1;
+            let cam_pos = camera
+                .single()
+                .unwrap_or(&GlobalTransform::default())
+                .translation()
+                .truncate();
             for room in new_rooms {
-                state.add_room(room.clone());
-                spawn_queue.0.push_back(room);
+                let index = state.add_room(room.clone());
+                if room.world_pos.distance(cam_pos) <= config.cull_dist {
+                    spawn_queue.0.push_back((index, room));
+                }
             }
             task.0 = None;
         }
     }
 
     for _ in 0..SPAWNS_PER_FRAME {
-        let Some(room) = spawn_queue.0.pop_front() else {
+        let Some((index, room)) = spawn_queue.0.pop_front() else {
             break;
         };
         let level_set = LevelSet::from_iids([room.room.iid.clone()]);
-        commands.spawn((LdtkWorldBundle {
-            ldtk_handle: ldtk_handle.0.clone().into(),
-            level_set,
-            transform: Transform::from_xyz(
-                room.world_pos.x - room.room.offset.x as f32,
-                room.world_pos.y + room.room.offset.y as f32,
-                50.0,
-            ),
-            ..default()
-        },));
+        commands.spawn((
+            LdtkWorldBundle {
+                ldtk_handle: ldtk_handle.0.clone().into(),
+                level_set,
+                transform: Transform::from_xyz(
+                    room.world_pos.x - room.room.offset.x as f32,
+                    room.world_pos.y + room.room.offset.y as f32,
+                    50.0,
+                ),
+                ..default()
+            },
+            SpawnedRoom(index),
+        ));
+    }
+
+    for _ in 0..DESPAWNS_PER_FRAME {
+        let Some(entity) = despawn_queue.0.pop_front() else {
+            break;
+        };
+        commands.entity(entity).despawn();
     }
 }
 

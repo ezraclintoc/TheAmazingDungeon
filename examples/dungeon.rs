@@ -2,10 +2,10 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::image::ImagePlugin;
-use bevy::window::{MonitorSelection, WindowMode};
+use bevy::window::{MonitorSelection, PresentMode, WindowMode};
 use bevy::camera_controller::pan_camera::{PanCamera, PanCameraPlugin};
 
-use bevy_ldtk_procgen::prelude::{WorldPlugin, WorldState};
+use bevy_ldtk_procgen::prelude::{DebugToggles, WorldPlugin, WorldState};
 
 #[derive(Component)]
 struct HudText;
@@ -19,6 +19,7 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         mode: WindowMode::BorderlessFullscreen(MonitorSelection::Current),
+                        present_mode: PresentMode::AutoNoVsync,
                         ..default()
                     }),
                     ..default()
@@ -30,7 +31,7 @@ fn main() {
         .add_plugins(LdtkPlugin)
         .add_plugins(WorldPlugin { debug, ..default() })
         .add_systems(Startup, (setup, setup_hud))
-        .add_systems(Update, update_hud)
+        .add_systems(Update, (update_hud, toggle_debug))
         .insert_resource(LdtkSettings {
             level_spawn_behavior: LevelSpawnBehavior::UseWorldTranslation {
                 load_level_neighbors: false,
@@ -42,6 +43,15 @@ fn main() {
 
 fn setup(mut commands: Commands) {
     commands.spawn((Camera2d, PanCamera::default()));
+}
+
+fn toggle_debug(keys: Res<ButtonInput<KeyCode>>, mut toggles: ResMut<DebugToggles>) {
+    if keys.just_pressed(KeyCode::KeyF) {
+        toggles.gizmos = !toggles.gizmos;
+    }
+    if keys.just_pressed(KeyCode::KeyG) {
+        toggles.grid = !toggles.grid;
+    }
 }
 
 fn setup_hud(mut commands: Commands) {

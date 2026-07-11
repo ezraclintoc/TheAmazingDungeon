@@ -38,8 +38,20 @@ bundled demo:
 cargo run --example dungeon --release
 ```
 
+For the smallest possible integration - no camera controls, HUD, or debug overlays,
+just `WorldPlugin` wired up - see `examples/minimal.rs`:
+
+```bash
+cargo run --example minimal --release
+```
+
 > Note: Nightly binaries are also automatically built and available for download under
 > the GitHub Actions tab if you want to try an executable demo.
+>
+> Note: always use `--release` when judging performance. Rust/Bevy debug builds are
+> commonly 10-50x slower for CPU-bound ECS work than release builds - a debug build can
+> look like a serious FPS bug (this has happened) when it's actually just an unoptimized
+> build.
 
 ## Bring your own LDtk file
 
@@ -79,18 +91,24 @@ mismatch will silently misplace or fail to connect rooms rather than error clear
 
 - R — Refresh / Regenerate a completely new map layout instantly.
 
-Debug overlays are off by default. Enable them with:
+- F — Toggle debug gizmos (open doors, room bounds, door collision boxes).
+
+- G — Toggle the spawn-distance/cull-distance grid, independently of F.
+
+Debug overlays are off by default. `--debug`/`-d` sets the starting state for both F and
+G at launch (F and G still work afterward regardless):
 
 ```bash
 cargo run --example dungeon --release -- --debug
 ```
 
-The `--` before `--debug` (or `-d`) is required - without it, cargo tries to parse
-`--debug` as its own argument instead of forwarding it to the game. With it on, you
-should see: small green circles at every open door, translucent green room-bounds
-rectangles, green door-clearance boxes, and a faint white grid centered on the camera
-once zoomed in - if none of that appears, the flag isn't reaching the binary (check for
-the missing `--` first).
+The `--` before `--debug` is required - without it, cargo tries to parse `--debug` as
+its own argument instead of forwarding it to the game. With gizmos on, you should see:
+small green circles at every open door, translucent green room-bounds rectangles, and
+green door-clearance boxes; with the grid on, a faint white grid at `camera_spawn_dist`
+and an orange circle at `cull_dist` (rooms beyond it get despawned), both centered on
+the camera, once zoomed in - if none of that appears, press F/G, and if that does
+nothing either, check for the missing `--` on the launch flag first.
 
 ## Library vs. demo
 
@@ -120,7 +138,7 @@ Dual-licensed under either [MIT](LICENSE-MIT) or [Apache License, Version 2.0](L
 
 ### Status
 
-- Just finished Spatial Hashing and multi-room-per-batch branch chaining.
+- Just finished Spatial Hashing, multi-room-per-batch branch chaining, and room culling/respawn (`cull_dist` on `WorldPlugin`).
 
 ### Known Bugs
 
@@ -136,7 +154,7 @@ While the core generation layout logic is running, here are the planned roadmap 
 
 - Save & Load System: Implement serialization and deserialization to allow players to save generated dungeon layouts and reload them later.
 
-- Room Culling / Unloading: Despawn or freeze LDtk levels that are too far outside the camera's viewport to optimize GPU memory and collision performance.
+- Cull `open_doors`, not just spawned rooms: culling (`cull_dist`) only bounds spawned room entities - `WorldState.open_doors` (every door not yet matched) has no cap at all. If doors get permanently stuck unfillable (see the bridging-validation regression noted in `spec.md`), this list could grow large and cost real time in `generate_batch`'s per-batch filtering and, if debug gizmos are on, in `debug_open_doors`/`debug_door_collision`'s uncapped per-frame redraw of every entry.
 
 - Derive Door Clearance Sizes: Door bounding boxes (the clearance a room reserves beyond each door) are currently hand-picked constants that happen to match the smallest single-door room for that direction in the LDtk project. Derive them from the room catalog instead, so they can't silently drift out of sync if a smaller or larger single-door room is ever added. And make spatial hash query offset be tied to the smallest room.
 

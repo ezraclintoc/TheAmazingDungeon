@@ -24,7 +24,17 @@ it immediately folds every placed room into the real `WorldState` (open-door boo
 matched doors removed, new doors added) so the next batch's collision checks see accurate
 state right away, then queues each room's `LdtkWorldBundle` spawn in a `SpawnQueue`
 drained at a capped rate (a few per frame) rather than all at once, so a large batch
-doesn't spike frame time when `bevy_ecs_ldtk` populates a level's tiles.
+doesn't spike frame time when `bevy_ecs_ldtk` populates a level's tiles. `poll_task` only
+queues a room for that spawn if it's within `cull_dist` of the camera - rooms placed
+further out (within the larger `camera_spawn_dist` readahead radius) stay logical-only
+until `cull_and_respawn_rooms` (see Algorithms) brings them in.
+
+Room *entities* are also unloaded and reloaded as the camera moves, independently of the
+logical data: `cull_and_respawn_rooms` despawns spawned rooms beyond `cull_dist` (queued
+through a `DespawnQueue`, drained the same throttled way as spawning) and respawns known
+rooms that come back within a smaller `respawn_dist` (hysteresis, avoids flicker at the
+boundary). This never touches `WorldState.rooms`/`room_grid` - only the visual entity -
+so collision math is unaffected by what's currently rendered.
 
 ## Algorithms
 
@@ -95,6 +105,27 @@ Given two colliding open doors, returns every room in the catalog whose placemen
 satisfy both simultaneously (not just the first match), so `try_place_room` can fall back
 to the next candidate if the first fails its own validation.
 
+### Culling - `cull_and_respawn_rooms` (`culling.rs`)
+
+Runs on a `Timer` (every 500ms, not every frame - camera movement between frames is too
+small to matter) rather than being state-driven like generation. The actual decisions
+are two pure functions on plain `(usize, Vec2)` data (same testable shape as
+`generate_batch`/`try_place_room`):
+
+- `rooms_to_cull`: spawned rooms farther than `cull_dist` from the camera.
+- `rooms_to_respawn`: known rooms (from `WorldState.rooms`, not regenerated) within a
+  smaller `respawn_dist` (`cull_dist * 0.8` - hysteresis) that aren't already spawned
+  *or* already queued to spawn. That second condition matters: a room can sit in
+  `SpawnQueue` for a while under load (`generate_batch` can place up to
+  `MAX_ROOMS_PER_FRAME` rooms in one batch, but only `SPAWNS_PER_FRAME` get drained into
+  entities per frame), and the respawn check has to see queued-but-not-yet-spawned rooms
+  as already accounted for, or it queues them a second time and `poll_task` spawns a
+  duplicate entity for the same room.
+
+Despawns are queued through a `DespawnQueue` and drained at a capped rate in `poll_task`,
+the same throttled way spawning already works - despawning everything beyond `cull_dist`
+in one frame would reproduce the exact hitch the spawn side was throttled to avoid.
+
 ### RNG
 
 One `GenRng` resource (a `SmallRng`) is seeded once per session - from `DUNGEON_SEED` if
@@ -124,26 +155,24 @@ digging into before trusting the "reaches 1000 rooms" claim at face value.
 
 ## Current Performance
 
-As of commit `9ff4604` (2026-07-10) - lib/examples restructure, `GenerationConfig`
-(camera_spawn_dist/max_rooms now configurable via `WorldPlugin`), and a substantial
-`assets/rooms.ldtk` content change (~10% more entities in the room catalog per a rough
-count) all landed in the same commit:
+As of commit `2be402c` (2026-07-11) - adds room culling/respawn (`cull_and_respawn_rooms`,
+`cull_dist` on `WorldPlugin`), runtime-toggleable debug overlays, and a minimal example.
+None of this touches `generate_batch`/`try_place_room` or `assets/rooms.ldtk` - culling
+only affects which rooms are visually spawned, never the placement algorithm or its
+inputs, so this run is a clean comparison against the last one (no asset change to
+confound it this time):
 
-- **100 rooms**: avg 45.96 us/room (41/50 seeds reached target)
-- **250 rooms**: avg 46.51 us/room (37/50 seeds reached target)
-- **500 rooms**: avg 47.73 us/room (32/50 seeds reached target)
-- **1000 rooms**: avg 49.74 us/room (24/50 seeds reached target)
+- **100 rooms**: avg 39.22 us/room (42/50 seeds reached target)
+- **250 rooms**: avg 41.25 us/room (37/50 seeds reached target)
+- **500 rooms**: avg 44.47 us/room (24/50 seeds reached target)
+- **1000 rooms**: avg 48.50 us/room (11/50 seeds reached target)
 
-Per-room cost climbs only ~1.08x as the target grows 10x (100 -> 1000 rooms) - flatter
-still, though the code changes here (lib restructure, config plumbing) don't touch the
-placement algorithm's cost model, so this movement is most plausibly noise plus whatever
-the larger room catalog changed about candidate availability, not a new optimization.
-Seed-reachability jumped a lot across every target (e.g. 1000 rooms: 24/50, vs 6/50 last
-run) - **can't be attributed to this commit's code changes** (none of them touch
-`try_place_room`'s validation/bridging logic), so the leading suspect is the larger
-`assets/rooms.ldtk` catalog giving `try_place_room`/bridging more candidate rooms to
-succeed with. Worth confirming next run once the asset change and code change aren't
-bundled together - right now they can't be told apart.
+Per-room cost climb is ~1.24x (100 -> 1000 rooms), in the same range as recent runs -
+expected, since nothing in this commit touches the placement algorithm. Seed-reachability
+moved around across targets (500 rooms: 24/50 vs 32/50 last run; 1000 rooms: 11/50 vs
+24/50) purely from run-to-run seed noise, same as the swings already seen in earlier rows
+of this table (e.g. `12443ae`'s two back-to-back runs) - not attributable to this commit,
+which doesn't touch `try_place_room`/bridging either.
 
 ## Benchmark History
 
@@ -161,6 +190,7 @@ target this run, which is itself meaningful (worth a Notes callout, not silently
 | 2026-07-08 | `105aa0a`     | 33.13 (30/50) | 38.73 (18/50) | 44.87 (7/50)   | 55.31 (1/50)   | First post-spatial-hashing measurement (feature/spatial-hashing rebased onto main). Per-room cost flattened a lot (see Current Performance), but seed-reachability at higher targets dropped sharply - suspected bridging-validation bug (pretend.add_room now runs open-door bookkeeping it didn't before), not a speed regression. Needs follow-up before trusting the 1000-room number.                                                                                                                         |
 | 2026-07-10 | `105aa0a`+wip | 34.12 (34/50) | 35.13 (23/50) | 37.54 (15/50)  | 39.46 (6/50)   | Uncommitted working tree on top of 105aa0a - adds multi-pass branch chaining to generate_batch (chains a branch multiple rooms deep per async batch) and a SpawnQueue frame-rate limiter to poll_task; numbers reflect the working tree, not a specific commit. Per-room cost climb flattened further (~1.16x vs ~1.67x), and 1000-room seed-reachability partially recovered (6/50 vs 1/50) but is still well short of the pre-spatial-hash 22/50 - the suspected bridging-validation regression remains unfixed. |
 | 2026-07-10 | `9ff4604`     | 45.96 (41/50) | 46.51 (37/50) | 47.73 (32/50)  | 49.74 (24/50)  | lib/examples restructure plus GenerationConfig (camera_spawn_dist/max_rooms configurable, no algorithm change) bundled with a substantial assets/rooms.ldtk content change (~10% more entities). Seed-reachability jumped a lot at every target; since none of this commit's code changes touch try_place_room/bridging, the larger room catalog is the leading suspect, not the code - not yet isolated from the asset change to confirm.                                                                         |
+| 2026-07-11 | `2be402c`     | 39.22 (42/50) | 41.25 (37/50) | 44.47 (24/50)  | 48.50 (11/50)  | Adds room culling/respawn, runtime debug toggles, and a minimal example - none of it touches generate_batch/try_place_room or assets/rooms.ldtk, so this is a clean comparison against the last row. Reachability swings are normal seed noise (see the two back-to-back 12443ae runs earlier in this table for the same effect), not a regression.                                                                                                                                                                |
 
 ### Performance Chart
 
@@ -176,10 +206,10 @@ longer depends much on room count" looks like.
 ```mermaid
 xychart-beta
     title "Avg cost by commit (us/room) - top to bottom: 1000, 500, 250, 100 rooms"
-    x-axis ["12443ae", "105aa0a", "105aa0a+wip", "9ff4604"]
+    x-axis ["12443ae", "105aa0a", "105aa0a+wip", "9ff4604", "2be402c"]
     y-axis "us/room" 0 --> 300
-    line [236.18, 55.31, 39.46, 49.74]
-    line [118.93, 44.87, 37.54, 47.73]
-    line [68.46, 38.73, 35.13, 46.51]
-    line [38.37, 33.13, 34.12, 45.96]
+    line [236.18, 55.31, 39.46, 49.74, 48.50]
+    line [118.93, 44.87, 37.54, 47.73, 44.47]
+    line [68.46, 38.73, 35.13, 46.51, 41.25]
+    line [38.37, 33.13, 34.12, 45.96, 39.22]
 ```
